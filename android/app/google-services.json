@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "582647822985",
+    "project_id": "homeworkout-3c939",
+    "storage_bucket": "homeworkout-3c939.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:582647822985:android:f49fa844ef2670bc80e458",
+        "android_client_info": {
+          "package_name": "com.example.home_workout"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIEpV415wXaZ2v5Lh75qZM4dKg9tZJDJk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

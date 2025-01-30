@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "582647822985",
+    "project_id": "homeworkout-3c939",
+    "storage_bucket": "homeworkout-3c939.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:582647822985:android:f49fa844ef2670bc80e458",
+        "android_client_info": {
+          "package_name": "com.example.home_workout"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "582647822985-aa0i1v0vos9h02n2fs6hfp9hs5kqrkvk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.home_workout",
+            "certificate_hash": "c2b291dcc87cc6cb6351acf8dc059e2f75f1b035"
+          }
+        },
+        {
+          "client_id": "582647822985-8bigo3tm1imnlunqun52nu5hgahm9911.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIEpV415wXaZ2v5Lh75qZM4dKg9tZJDJk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "582647822985-8bigo3tm1imnlunqun52nu5hgahm9911.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "582647822985-sju7fh5a5rrm5b9bdcvltfepe15hltui.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.homeWorkout"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
