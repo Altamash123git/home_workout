@@ -14,6 +14,7 @@ class FavouritesBloc extends Bloc<FavouritesEvent,FavouritesState> {
         emit(FavouritesLoadedState(mexercise: data));
       }
     });
+
 on<DeleteFavouritesEvent>((event,emit)async{
   emit(FavouritesLoadingState());
   bool check= await dbHelper.deleteFavourites(event.id);
@@ -28,7 +29,17 @@ on<GetAllFavouritesEvent>((event,emit)async{
   var data= await dbHelper.getAllFavourites();
   emit(FavouritesLoadedState(mexercise: data));
 });
+    on<DeletAllFavouritesEvent>((event,emit)async{
+      emit(FavouritesLoadingState());
+      bool check=await dbHelper.deleteAllFavourites();
+      if(check){
+
+        var data= await dbHelper.getAllFavourites();
+        emit(FavouritesLoadedState(mexercise: data));
+      }
+    });
   }
+
 }
 /*class HistoryBloc extends Bloc<HistoryEvent,ExerciseHistroyState>{
   DBHelper dbHelper;

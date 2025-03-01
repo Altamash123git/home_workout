@@ -245,7 +245,7 @@ color: Colors.white,
                     UserInfoValues.dob=" ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}";
                     if(UserInfoValues.dob!=null){
 
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Date of birth saved ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year} ",style: TextStyle(color: Colors.green),)));
+                      //ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Date of birth saved ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year} ",style: TextStyle(color: Colors.green),)));
                       Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeftWithFade,child: HeightInfoPage()));
                     }else{
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("please select birth date ",style: TextStyle(color: Colors.red),)));

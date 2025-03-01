@@ -128,9 +128,9 @@ String getDesscTitle(){
           centerTitle: true,
 
           leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: Colors.black),
+            icon: Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () {
-              Navigator.pop(context);
+             // Navigator.pop(context);
             },
           ),
           backgroundColor: Colors.white,
@@ -228,16 +228,22 @@ String getDesscTitle(){
                       padding: const EdgeInsets.all(16.0),
                       child: Card(
                         elevation: 7,
-                        child: Container(
-                          width: 180,
-                          height: 30,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: Colors.white
-                          ),
-                          child: Text(                          'SAVE AND CONTINUE',
-                            style: TextStyle(fontSize: isLandscape?width*0.03:width*0.04, color: AppColors.secondaryolor,fontWeight: FontWeight.w600),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>Dashboardpage()));
+                          },
+
+                          child: Container(
+                            width: 180,
+                            height: 30,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white
+                            ),
+                            child: Text(                          'SAVE AND CONTINUE',
+                              style: TextStyle(fontSize: isLandscape?width*0.03:width*0.04, color: AppColors.secondaryolor,fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                       ),

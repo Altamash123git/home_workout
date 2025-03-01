@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:hive/hive.dart';
@@ -29,6 +30,7 @@ class Activescreen extends StatefulWidget {
   final int day;
   final String ChallengeName;
   final bool ischallenge;
+
   final List<String> instructions;
   final List<String> focuss_area;
   final List<String> not_to_do;
@@ -59,6 +61,31 @@ class Activescreen extends StatefulWidget {
 
 class _ActivescreenState extends State<Activescreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  final List<Map<String, dynamic>> warmUpPhases = [
+    {'phase': 'armCirclesForward', 'duration': 30.0},
+    {'phase': 'armCirclesBackward', 'duration': 30.0},
+    {'phase': 'legSwings', 'duration': 90.0}, // e.g. 10 swings per leg
+    {
+      'phase': 'jumpingJacks',
+      'duration': 150.0
+    }, // remaining time to fill 5 min
+  ];
+  final List<String> warmupGifList = [
+    'assets/exercises/jumping_jack.gif',
+    'assets/exercises/mountain_climb.gif',
+    'assets/exercises/pushups.gif',
+    'assets/exercises/squats.gif',
+    'assets/exercises/plank_shoulder_taps.gif',
+  ];
+
+  final List<String> warmupAudioList = [
+    'audio/jumpingjacks.mp3',
+    'audio/mountainclimb.mp3',
+    'audio/pushups.mp3',
+    'audio/squats.mp3',
+    'audio/shoulderplank.mp3',
+  ];
+
   AudioPlayer player = AudioPlayer();
   DateTime? selectedDate;
   DateFormat dtFormat = DateFormat.yMMMEd();
@@ -69,11 +96,14 @@ class _ActivescreenState extends State<Activescreen>
   double? restDuration;
   double? guideDuration;
   Timer? timer;
+  bool isFavouriteTapped=false;
   double fixtiming = 30;
   late TabController _tabController;
-  double timerSeconds = 30; // General timer value
+  int currentWarmUpPhaseIndex = 0;
+  double timerSeconds = 30;
+  // General timer value
   String currentPhase =
-      'getReady'; // Phase control: 'getReady', 'guiding', 'exercise', 'rest'
+      'warmUp'; // Phase control: 'getReady', 'guiding', 'exercise', 'rest'
 
   @override
   void dispose() {
@@ -187,46 +217,70 @@ class _ActivescreenState extends State<Activescreen>
     exerciseDuration = exercise.get("exercisetime");
   }
 
+  void skipWarmup() {
+    timer?.cancel(); // Stop the current warm-up timer
+
+    setState(() {
+      currentWarmUpPhaseIndex = 0; // Reset warm-up index
+      currentPhase = 'getReady'; // Jump directly to "Get Ready" phase
+    });
+
+    startPhase(); // Start the "Get Ready" phase immediately
+  }
+
   //guiding audio
   void playGuidingAudio() async {
-    await player.play(
-      AssetSource(widget.exerciseaudios[currentExerciseIndex]),
-    );
+    if (currentPhase == 'warmUp') {
+      await player.play(
+        AssetSource(warmupAudioList[currentWarmUpPhaseIndex]),
+      );
+    } else {
+      // Play guiding audio from regular exercise audio list
+      await player.play(
+        AssetSource(widget.exerciseaudios[currentExerciseIndex]),
+      );
+    }
   }
 
   void startPhase() {
     timer?.cancel(); // Cancel any active timer
 
     setState(() {
-      // Determine timer duration and phase name
-      switch (currentPhase) {
-        case 'getReady':
-          fixtiming = 5;
-          timerSeconds = 5;
-          player.stop();
-          break;
-        case 'guiding':
-          fixtiming = guideDuration != null ? guideDuration! : 8;
-          timerSeconds = guideDuration != null ? guideDuration! : 8;
-          playGuidingAudio();
-
-          break;
-        case 'exercise':
-          fixtiming = exerciseDuration != null ? exerciseDuration! : 30;
-          timerSeconds = exerciseDuration != null ? exerciseDuration! : 30;
-          player.stop();
-
-          break;
-        case 'rest':
-          fixtiming = restDuration != null ? restDuration! : 5;
-          timerSeconds = restDuration != null ? restDuration! : 5;
-          player.stop();
-
-          break;
+      if (currentPhase == 'warmUp') {
+        // Use the current warm-up sub-phase duration.
+        fixtiming = warmUpPhases[currentWarmUpPhaseIndex]['duration'];
+        timerSeconds = warmUpPhases[currentWarmUpPhaseIndex]['duration'];
+        // Optionally, update UI or play specific warm-up audio here.
+        //player.stop();
+        playGuidingAudio();
+      } else {
+        // Determine timer duration and phase name for normal phases.
+        switch (currentPhase) {
+          case 'getReady':
+            fixtiming = 5;
+            timerSeconds = 5;
+            player.stop();
+            break;
+          case 'guiding':
+            fixtiming = guideDuration != null ? guideDuration! : 8;
+            timerSeconds = guideDuration != null ? guideDuration! : 8;
+            playGuidingAudio();
+            break;
+          case 'exercise':
+            fixtiming = exerciseDuration != null ? exerciseDuration! : 30;
+            timerSeconds = exerciseDuration != null ? exerciseDuration! : 30;
+            player.stop();
+            break;
+          case 'rest':
+            fixtiming = restDuration != null ? restDuration! : 5;
+            timerSeconds = restDuration != null ? restDuration! : 5;
+            player.stop();
+            break;
+        }
       }
     });
 
-    // Start the timer
+    // Start the timer.
     timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -244,57 +298,63 @@ class _ActivescreenState extends State<Activescreen>
   }
 
   void nextPhase() {
-    // Transition between phases
-    switch (currentPhase) {
-      case 'getReady':
-        currentPhase = 'guiding';
-        break;
-      case 'guiding':
-        currentPhase = 'exercise';
-        break;
-      case 'exercise':
-        currentPhase = 'rest';
-        break;
-      case 'rest':
-        if (currentExerciseIndex < widget.exercises.length - 1) {
-          currentPhase = 'getReady';
-          currentExerciseIndex++;
-        } else {
-          // All exercises completed
-          _addName(widget.workoutName, widget.img);
-          if (widget.ischallenge) {
-            _addDay(widget.day);
-          }
-          player.stop();
-          Navigator.pushReplacement(
+    // Transition between phases.
+    if (currentPhase == 'warmUp') {
+      // If we're in the warm-up phase, move to the next warm-up sub-phase.
+      if (currentWarmUpPhaseIndex < warmUpPhases.length - 1) {
+        currentWarmUpPhaseIndex++;
+      } else {
+        // Warm-up completed; reset warm-up index and move to next main phase.
+        currentWarmUpPhaseIndex = 0;
+        currentPhase = 'getReady';
+      }
+    } else {
+      // For the main phases.
+      switch (currentPhase) {
+        case 'getReady':
+          currentPhase = 'guiding';
+          break;
+        case 'guiding':
+          currentPhase = 'exercise';
+          break;
+        case 'exercise':
+          currentPhase = 'rest';
+          break;
+        case 'rest':
+          if (currentExerciseIndex < widget.exercises.length - 1) {
+            currentPhase = 'getReady';
+            currentExerciseIndex++;
+          } else {
+            // All exercises completed.
+            _addName(widget.workoutName, widget.img);
+            if (widget.ischallenge) {
+              _addDay(widget.day);
+            }
+            player.stop();
+            Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (_) => AchievementScreen(
-                        exerciseLength: widget.exercises.length.toString(),
-                        duration: widget.duration,
-                        calories: widget.calories,
-                        ischallenge: widget.ischallenge,
-                        days: widget.day,
-                        challengeName: widget.ChallengeName,
-                      )));
-          /*  Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AchievementScreen(
-                  workoutName: widget.workoutName,
-                  duration: 5,
-                  caloriesBurned: 500),
-            ),
-                (Route<dynamic> route) => false,
-          );*/
-          return;
-        }
-        break;
+                builder: (_) => AchievementScreen(
+                  exerciseLength: widget.exercises.length.toString(),
+                  duration: widget.duration,
+                  calories: widget.calories,
+                  ischallenge: widget.ischallenge,
+                  days: widget.day,
+                  challengeName: widget.ChallengeName,
+                ),
+              ),
+            );
+            return;
+          }
+          break;
+      }
     }
-
-    startPhase(); // Start the next phase
+    startPhase(); // Start the next phase.
   }
 
+  bool isWarmUp() {
+    return currentPhase == "warmUp";
+  }
   //pause timer
   // Tracks whether the timer is paused
 
@@ -388,469 +448,523 @@ class _ActivescreenState extends State<Activescreen>
     var width = MediaQuery.of(context).size.width;
     bool isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Color(0xfff5f5f5),
-        appBar: AppBar(
-          iconTheme: IconThemeData(
-              weight: 40,
-              color: Colors.black // Change the color of the back icon
-              ),
-          backgroundColor: Color(0xfff5f5f5),
-          title: Text(
-            currentPhase == 'getReady'
-                ? 'Getting Ready'
-                : currentPhase == 'guiding'
-                    ? 'Guiding'
-                    : currentPhase == 'rest'
-                        ? 'Resting'
-                        : widget.exercises[currentExerciseIndex],
-            style: TextStyle(
-                color: Color(0xff1e1e1e),
-                fontSize: 21,
-                wordSpacing: 1,
-                fontWeight: FontWeight.w800),
-          ),
-          actions: [
-            IconButton(
-                onPressed: () {
-                  _showVolumeDialog();
-                },
-                icon: Icon(
-                  Icons.volume_down_rounded,
-                  color: AppColors.secondaryolor,
-                  size: 30,
-                ))
-          ],
-          centerTitle: true,
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              currentPhase == 'getReady' || currentPhase == 'guiding'
-                  ? Container(
-                      alignment: Alignment.center,
-                      child: Column(
-                        children: [
-                          Container(
-                            width: width * 0.9,
-                            height: height * 0.14,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                    flex: 1,
-                                    child: Container(
-                                      padding:
-                                          EdgeInsets.only(left: 20, top: 30),
-                                      //child: Image.asset(widget.img),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                            widget.img,
-                                          ),
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-                                          fit: BoxFit
-                                              .contain, // Adjust this as needed
-                                        ),
-                                      ),
-                                    )),
-                                Expanded(
-                                    flex: 2,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 8.0),
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            widget.exercises[
-                                                currentExerciseIndex],
-                                            style: TextStyle(
-                                                color: Color(0xff1e1e1e),
-                                                fontSize: isLandscape
-                                                    ? width * 0.03
-                                                    : width * 0.05,
-                                                wordSpacing: 1,
-                                                fontWeight: FontWeight.w800),
-                                          ),
-                                          Text(
-                                            widget.short_description[
-                                                currentExerciseIndex],
-                                            style: TextStyle(
-                                                color: Color(0xff1e1e1e),
-                                                fontSize: isLandscape
-                                                    ? width * 0.04
-                                                    : width * 0.037,
-                                                wordSpacing: 2,
-                                                fontWeight: FontWeight.w600),
-                                            textAlign: TextAlign.start,
-                                          ),
-                                        ],
-                                      ),
-                                    ))
-                              ],
-                            ),
+    return WillPopScope(
+      onWillPop: () async {
+        // Reset orientation to allow both landscape and portrait when leaving
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]);
+        return true;
+      },
+      child: SafeArea(
+        child: Scaffold(
+          backgroundColor: Color(0xfff5f5f5),
+          appBar: AppBar(
+            iconTheme: IconThemeData(
+                weight: 40,
+                color: Colors.black // Change the color of the back icon
+                ),
+            backgroundColor: Color(0xfff5f5f5),
+            title: Text(
+              currentPhase == 'warmUp'
+                  ? 'Warm Up'
+                  : currentPhase == 'getReady'
+                      ? 'Getting Ready'
+                      : currentPhase == 'guiding'
+                          ? 'Guiding'
+                          : currentPhase == 'rest'
+                              ? 'Resting'
+                              : widget.exercises[currentExerciseIndex],
+              style: TextStyle(
+                  color: Color(0xff1e1e1e),
+                  fontSize: 21,
+                  wordSpacing: 1,
+                  fontWeight: FontWeight.w800),
+            ),
+            actions: [
+              isWarmUp()
+                  ? IconButton(
+                      onPressed: skipWarmup,
+                      icon: Icon(
+                        Icons.skip_next,
+                        color: AppColors.secondaryolor,
+                        size: 30,
+                      ))
+                  : Container(),
+              IconButton(
+                  onPressed: () {
+                    _showVolumeDialog();
+                  },
+                  icon: Icon(
+                    Icons.volume_down_rounded,
+                    color: AppColors.secondaryolor,
+                    size: 30,
+                  ))
+            ],
+            centerTitle: true,
+          ),
+          body: SingleChildScrollView(
+            child: Column(
+              children: [
+                currentPhase == 'warmUp'
+                    ? Container(
+                        height: height * 0.44,
+                        margin: EdgeInsets.only(bottom: height * 0.01),
+                        //color: Colors.blue,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.asset(
+                            warmupGifList[currentWarmUpPhaseIndex],
+                            fit: BoxFit.contain,
+                            //height: height * 0.33,
+                            width: width + 50,
+                            filterQuality: FilterQuality.high,
                           ),
-                          SizedBox(
-                            height: height * 0.01,
-                          ),
-                          Divider(
-                            height: 3,
-                            indent: 25,
-                            endIndent: 25,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(
-                            height: 5,
-                          ),
-                          Container(
+                        ),
+                      )
+                    : currentPhase == 'getReady' || currentPhase == 'guiding'
+                        ? Container(
                             alignment: Alignment.center,
-                            height: height * 0.3,
                             child: Column(
                               children: [
                                 Container(
                                   width: width * 0.9,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.secondaryolor,
-                                    borderRadius: BorderRadius.only(
-                                      topRight: Radius.circular(20),
-                                      topLeft: Radius.circular(20),
-                                    ),
-                                  ),
-                                  child: TabBar(
-                                    isScrollable: false,
-                                    controller: _tabController,
-                                    indicator: BoxDecoration(
-                                      border: Border(
-                                        bottom: BorderSide(
-                                          color: AppColors.secondaryolor,
-                                          width: 4,
-                                        ),
-                                      ),
-                                      color: Colors.white,
-                                    ),
-                                    labelColor: AppColors.secondaryolor,
-                                    indicatorSize: TabBarIndicatorSize.tab,
-                                    unselectedLabelColor: Colors.white,
-                                    labelStyle: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: isLandscape
-                                            ? width * 0.03
-                                            : width * 0.033),
-                                    unselectedLabelStyle:
-                                        TextStyle(fontWeight: FontWeight.w500),
-                                    tabs: [
-                                      Tab(text: "INSTRUCTION"),
-                                      Tab(text: "FOCUS AREA"),
-                                      Tab(text: "NOT TO DO"),
+                                  height: height * 0.14,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                          flex: 1,
+                                          child: Container(
+                                            padding: EdgeInsets.only(
+                                                left: 20, top: 30),
+                                            //child: Image.asset(widget.img),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              image: DecorationImage(
+                                                image: AssetImage(
+                                                  widget.img,
+                                                ),
+
+                                                fit: BoxFit
+                                                    .contain, // Adjust this as needed
+                                              ),
+                                            ),
+                                          )),
+                                      Expanded(
+                                          flex: 2,
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(left: 8.0),
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  widget.exercises[
+                                                      currentExerciseIndex],
+                                                  style: TextStyle(
+                                                      color: Color(0xff1e1e1e),
+                                                      fontSize: isLandscape
+                                                          ? width * 0.03
+                                                          : width * 0.05,
+                                                      wordSpacing: 1,
+                                                      fontWeight:
+                                                          FontWeight.w800),
+                                                ),
+                                                Text(
+                                                  widget.short_description[
+                                                      currentExerciseIndex],
+                                                  style: TextStyle(
+                                                      color: Color(0xff1e1e1e),
+                                                      fontSize: isLandscape
+                                                          ? width * 0.04
+                                                          : width * 0.037,
+                                                      wordSpacing: 2,
+                                                      fontWeight:
+                                                          FontWeight.w600),
+                                                  textAlign: TextAlign.start,
+                                                ),
+                                              ],
+                                            ),
+                                          ))
                                     ],
                                   ),
                                 ),
-                                Expanded(
-                                  // Use Expanded to let the TabBarView take the remaining space properly
-                                  child: Card(
-                                    child: Container(
-                                      width: width * 0.9,
-                                      padding:
-                                          EdgeInsets.symmetric(horizontal: 15),
-                                      decoration: BoxDecoration(
-                                        color: Color(0xffffffff),
-                                        borderRadius: BorderRadius.only(
-                                          bottomRight: Radius.circular(20),
-                                          bottomLeft: Radius.circular(20),
+                                SizedBox(
+                                  height: height * 0.01,
+                                ),
+                                Divider(
+                                  height: 3,
+                                  indent: 25,
+                                  endIndent: 25,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(
+                                  height: 5,
+                                ),
+                                Container(
+                                  alignment: Alignment.center,
+                                  height: height * 0.3,
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: width * 0.9,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.secondaryolor,
+                                          borderRadius: BorderRadius.only(
+                                            topRight: Radius.circular(20),
+                                            topLeft: Radius.circular(20),
+                                          ),
+                                        ),
+                                        child: TabBar(
+                                          isScrollable: false,
+                                          controller: _tabController,
+                                          indicator: BoxDecoration(
+                                            border: Border(
+                                              bottom: BorderSide(
+                                                color: AppColors.secondaryolor,
+                                                width: 4,
+                                              ),
+                                            ),
+                                            color: Colors.white,
+                                          ),
+                                          labelColor: AppColors.secondaryolor,
+                                          indicatorSize: TabBarIndicatorSize.tab,
+                                          unselectedLabelColor: Colors.white,
+                                          labelStyle: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: isLandscape
+                                                  ? width * 0.03
+                                                  : width * 0.028),
+                                          unselectedLabelStyle: TextStyle(
+                                              fontWeight: FontWeight.w500),
+                                          tabs: [
+                                            Tab(text: "INSTRUCTION"),
+                                            Tab(text: "FOCUS AREA"),
+                                            Tab(text: "NOT TO DO"),
+                                          ],
                                         ),
                                       ),
-                                      child: TabBarView(
-                                        controller: _tabController,
-                                        children: [
-                                          SingleChildScrollView(
-                                            // Make content scrollable
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                widget.instructions[
-                                                    currentExerciseIndex],
-                                                style: TextStyle(
-                                                  color: Color(0xff4a4545),
-                                                  fontWeight: FontWeight.w500,
-                                                  fontSize: 18,
-                                                ),
+                                      Expanded(
+                                        // Use Expanded to let the TabBarView take the remaining space properly
+                                        child: Card(
+                                          child: Container(
+                                            width: width * 0.9,
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 15),
+                                            decoration: BoxDecoration(
+                                              color: Color(0xffffffff),
+                                              borderRadius: BorderRadius.only(
+                                                bottomRight: Radius.circular(20),
+                                                bottomLeft: Radius.circular(20),
                                               ),
                                             ),
-                                          ),
-                                          SingleChildScrollView(
-                                            // Make content scrollable
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                widget.focuss_area[
-                                                    currentExerciseIndex],
-                                                style: TextStyle(
-                                                  color: Color(0xff4a4545),
-                                                  fontWeight: FontWeight.w500,
-                                                  fontSize: 18,
+                                            child: TabBarView(
+                                              controller: _tabController,
+                                              children: [
+                                                SingleChildScrollView(
+                                                  // Make content scrollable
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(8.0),
+                                                    child: Text(
+                                                      widget.instructions[
+                                                          currentExerciseIndex],
+                                                      style: TextStyle(
+                                                        color: Color(0xff4a4545),
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize:width * 0.037,
+                                                      ),
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
+                                                SingleChildScrollView(
+                                                  // Make content scrollable
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(8.0),
+                                                    child: Text(
+                                                      widget.focuss_area[
+                                                          currentExerciseIndex],
+                                                      style: TextStyle(
+                                                        color: Color(0xff4a4545),
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: width * 0.037
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                SingleChildScrollView(
+                                                  // Make content scrollable
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(8.0),
+                                                    child: Text(
+                                                      widget.not_to_do[
+                                                          currentExerciseIndex],
+                                                      style: TextStyle(
+                                                        color: Color(0xff4a4545),
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: width * 0.037,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          SingleChildScrollView(
-                                            // Make content scrollable
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(8.0),
-                                              child: Text(
-                                                widget.not_to_do[
-                                                    currentExerciseIndex],
-                                                style: TextStyle(
-                                                  color: Color(0xff4a4545),
-                                                  fontWeight: FontWeight.w500,
-                                                  fontSize: 18,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ),
+                                )
                               ],
                             ),
                           )
-                        ],
-                      ),
-                    )
-                  : Container(
-                      height: height * 0.44,
-                      margin: EdgeInsets.only(bottom: height * 0.01),
-                      //color: Colors.blue,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.asset(
-                          widget.exercisegifs[currentExerciseIndex],
-                          fit: BoxFit.contain,
-                          //height: height * 0.33,
-                          width: width + 50,
-                          filterQuality: FilterQuality.high,
-                        ),
+                        : Container(
+                            height: height * 0.44,
+                            margin: EdgeInsets.only(bottom: height * 0.01),
+                            //color: Colors.blue,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.asset(
+                                widget.exercisegifs[currentExerciseIndex],
+                                fit: BoxFit.contain,
+                                //height: height * 0.33,
+                                width: width + 50,
+                                filterQuality: FilterQuality.high,
+                              ),
+                            ),
+                          ),
+        Padding(
+          padding: EdgeInsets.all(0),
+          child: Container(
+            alignment: Alignment.center,
+            width: width * 0.9,
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryolor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Stack(
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // "LET'S DO THIS!" should be inside Column
+                    Text(
+                      "LET'S DO THIS!",
+                      style: TextStyle(
+                        fontSize: isLandscape ? width * 0.04 : width * 0.054,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-              Padding(
-                padding: EdgeInsets.all(0),
-                child: Container(
-                  alignment: Alignment.center,
-                  width: width * 0.9,
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryolor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "LET'S DO THIS!",
-                        style: TextStyle(
-                            fontSize:
-                                isLandscape ? width * 0.04 : width * 0.054,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        widget.exercises[currentExerciseIndex],
-                        style: TextStyle(
-                            fontSize: isLandscape ? width * 0.04 : width * 0.05,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(
-                        height: height * 0.01,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          InkWell(
-                            onTap: toggleTimer,
-                            child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isPaused ? Icons.play_arrow : Icons.pause,
-                                  size: 45,
-                                  color: AppColors.secondaryolor,
-                                )),
-                          ),
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  //color: Colors.green[400],
-                                  shape: BoxShape.circle,
-                                ),
-                                width: width * 0.3,
-                                height: height * 0.14,
-                                child: CircularProgressIndicator(
-                                  value: timerSeconds.toDouble() / fixtiming,
-                                  strokeWidth: 12.0,
-                                  color: Colors.grey,
-                                  backgroundColor: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                '${timerSeconds.toString()}',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: width * 0.07,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          InkWell(
-                              onTap: () {
-                                nextPhase();
-                                toggleTimer();
-                                // player.stop();
-                              },
-                              child: Icon(
-                                Icons.skip_next_rounded,
-                                size: 55,
-                                color: Colors.white,
-                              ))
-                        ],
-                      ),
-                      SizedBox(
-                        height: height * 0.02,
-                      ),
-                      Text(
-                        "EXERCISE NUMBER",
-                        style: TextStyle(
-                            fontSize:
-                                isLandscape ? width * 0.04 : width * 0.054,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
-                      ),
-                      Align(
-                        // alignment: Alignment.topRight,
-                        child: Text(
-                          '${currentExerciseIndex + 1} / ${widget.exercises.length}',
-                          style: TextStyle(
-                              fontSize:
-                                  isLandscape ? width * 0.04 : width * 0.065,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      SizedBox(height: height * 0.001),
-                      InkWell(
-                        onTap: () {
-                          if (widget.exercises.isEmpty ||
-                              widget.exerciseDetails.isEmpty ||
-                              widget.exercisegifs.isEmpty) {
-                            print(
-                                "One or more lists are empty. Cannot add to favourites.");
-                            return;
-                          }
-                          if (currentExerciseIndex < 0 ||
-                              currentExerciseIndex >= widget.exercises.length) {
-                            print(
-                                "Invalid currentExerciseIndex: $currentExerciseIndex");
-                            return;
-                          }
+                    SizedBox(height: 2), // Add spacing to avoid overlapping
 
-                          print(widget.exercises[currentExerciseIndex]);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(
-                                  "${widget.exercises[currentExerciseIndex]} added to favourites")));
-                          print("favourites added in databse");
-                          addToFavourites(
-                            exerciseName:
-                                widget.exercises[currentExerciseIndex],
-                            exerciseDesc:
-                                widget.exerciseDetails[currentExerciseIndex],
-                            exerciseGif:
-                                widget.exercisegifs[currentExerciseIndex],
-                            exerciseImg: widget.img,
-                          );
-                        },
-                        child:
-                            Icon(Icons.favorite, color: Colors.blue, size: 30),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: GestureDetector(
-            onTap: () {
-              timer?.cancel();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  elevation: 11,
-                  backgroundColor: Colors.white,
-                  title: Text(
-                    currentExerciseIndex + 1 == widget.exercises.length
-                        ? 'Great job finishing your workout!'
-                        : 'Work out Not Completed',
-                    style: const TextStyle(color: Colors.green),
-                  ),
-                  content: Text(
-                    currentExerciseIndex + 1 == widget.exercises.length
-                        ? 'Great job finishing your workout!'
-                        : 'Still want to exit workout?',
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        player.stop();
-                        addWorkoutHistory(
-                            exerciseName: widget.workoutName,
-                            exerciseCalories: widget.calories.toString(),
-                            exerciseDate: DateTime.now()
-                                .millisecondsSinceEpoch
-                                .toString(),
-                            exerciseDuration: widget.duration,
-                            exerciseimg: widget.img);
-                        _addName(widget.workoutName, widget.img);
-                        if (widget.ischallenge) {
-                          _addDay(widget.day);
-                        }
-                        Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => AchievementScreen(
-                                      exerciseLength:
-                                          widget.exercises.length.toString(),
-                                      duration: widget.duration,
-                                      calories: widget.calories,
-                                      ischallenge: widget.ischallenge,
-                                      days: widget.day,
-                                      challengeName: widget.ChallengeName,
-                                    )));
-                      },
+                    // Workout Name
+                    Text(
+                      currentPhase == 'warmUp'
+                          ? warmUpPhases[currentWarmUpPhaseIndex]["phase"]
+                          : widget.exercises[currentExerciseIndex],
+                      style: TextStyle(
+                        fontSize: isLandscape ? width * 0.04 : width * 0.05,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: height * 0.01),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        InkWell(
+                          onTap: toggleTimer,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isPaused ? Icons.play_arrow : Icons.pause,
+                              size: 45,
+                              color: AppColors.secondaryolor,
+                            ),
+                          ),
+                        ),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: width * 0.3,
+                              height: height * 0.14,
+                              child: CircularProgressIndicator(
+                                value: timerSeconds.toDouble() / fixtiming,
+                                strokeWidth: 12.0,
+                                color: Colors.grey,
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              '${timerSeconds.toString()}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: width * 0.07,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        InkWell(
+                          onTap: () {
+                            nextPhase();
+                            toggleTimer();
+                          },
+                          child: Icon(
+                            Icons.skip_next_rounded,
+                            size: 55,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: height * 0.02),
+
+                    // Exercise Counter
+                    Align(
                       child: Text(
-                        'Done',
-                        style: TextStyle(color: Colors.black),
+                        '${currentExerciseIndex + 1} / ${widget.exercises.length}',
+                        style: TextStyle(
+                          fontSize: isLandscape ? width * 0.04 : width * 0.065,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              );
-            },
-            child: InkWell(
-              onTap: (){
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>Homepage()));
+
+                // Favorite Button - Positioned at top-right
+                isWarmUp()
+                    ? Container():   Positioned(
+                  right: 5, // Adjust for better positioning
+                  top: 0, // Align to the top-right
+                  child: InkWell(
+                    onTap: () {
+
+                      setState(() {
+                        isFavouriteTapped = !isFavouriteTapped; // Toggle state
+                      });
+                      if (widget.exercises.isEmpty ||
+                          widget.exerciseDetails.isEmpty ||
+                          widget.exercisegifs.isEmpty) {
+                        print("One or more lists are empty. Cannot add to favourites.");
+                        return;
+                      }
+                      if (currentExerciseIndex < 0 ||
+                          currentExerciseIndex >= widget.exercises.length) {
+                        print("Invalid currentExerciseIndex: $currentExerciseIndex");
+                        return;
+                      }
+
+                      print(widget.exercises[currentExerciseIndex]);
+
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(
+                              "${widget.exercises[currentExerciseIndex]} added to favourites")));
+                      print("Favourites added in database");
+
+                      addToFavourites(
+                        exerciseName: widget.exercises[currentExerciseIndex],
+                        exerciseDesc: widget.exerciseDetails[currentExerciseIndex],
+                        exerciseGif: widget.exercisegifs[currentExerciseIndex],
+                        exerciseImg: widget.img,
+                      );
+                    },
+                    child:Icon(Icons.favorite, color:isFavouriteTapped?  Colors.blue:Colors.white, size: 30),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+
+        ],
+            ),
+          ),
+          bottomNavigationBar: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: GestureDetector(
+              onTap: () {
+                timer?.cancel();
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    elevation: 11,
+                    backgroundColor: Colors.white,
+                    title: Text(
+                      currentExerciseIndex + 1 == widget.exercises.length
+                          ? 'Great job finishing your workout!'
+                          : 'Work out Not Completed',
+                      style: const TextStyle(color: Colors.green),
+                    ),
+                    content: Text(
+                      currentExerciseIndex + 1 == widget.exercises.length
+                          ? 'Great job finishing your workout!'
+                          : 'Still want to exit workout?',
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          player.stop();
+                          addWorkoutHistory(
+                              exerciseName: widget.workoutName,
+                              exerciseCalories: widget.calories.toString(),
+                              exerciseDate: DateTime.now()
+                                  .millisecondsSinceEpoch
+                                  .toString(),
+                              exerciseDuration: widget.duration,
+                              exerciseimg: widget.img);
+                          _addName(widget.workoutName, widget.img);
+                          if (widget.ischallenge) {
+                            _addDay(widget.day);
+                          }
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AchievementScreen(
+                                exerciseLength:
+                                    widget.exercises.length.toString(),
+                                duration: widget.duration,
+                                calories: widget.calories,
+                                ischallenge: widget.ischallenge,
+                                days: widget.day,
+                                challengeName: widget.ChallengeName,
+                              ),
+                            ),
+                            (Route<dynamic> route) =>
+                                false, // ✅ Correct placement of the closing parenthesis
+                          );
+                        },
+                        child: Text(
+                          'Done',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
               },
               child: Container(
                 alignment: Alignment.center,
@@ -858,7 +972,7 @@ class _ActivescreenState extends State<Activescreen>
                 decoration: BoxDecoration(
                     color: AppColors.secondaryolor,
                     borderRadius: BorderRadius.circular(10)),
-                height: 60,
+                height: 50,
                 child: Text(
                   "Finish",
                   style: TextStyle(
@@ -874,3 +988,21 @@ class _ActivescreenState extends State<Activescreen>
     );
   }
 }
+
+/*() {
+                                    _addName(widget.workoutName, widget.img);
+                                    if (widget.ischallenge) {
+                                      _addDay(widget.day);
+                                    }
+
+                                    Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                AchievementScreen(
+                                                    workoutName:
+                                                        widget.workoutName,
+                                                    duration: 6,
+                                                    caloriesBurned: 500)),
+                                        (Route<dynamic> route) => false);
+                                  }*/

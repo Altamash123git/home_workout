@@ -74,87 +74,7 @@ class _AllworkoutPageState extends State<AllworkoutPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                uid.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: CircularProgressIndicator(),
-                      )
-                    : BlocBuilder<UserBloc, UserState>(
-                        builder: (context, state) {
-                          if (state is UserLoaded) {
-                            var data = state.userData;
-                            final name = state.userData['name'] ?? 'User';
-                            return Container(
-                              height: height * 0.19,
-                              padding: EdgeInsets.all(10),
-                              //margin: EdgeInsets.symmetric(horizontal: 5),
-                              decoration: BoxDecoration(
-                                  color: AppColors.secondaryolor,
-                                  borderRadius: BorderRadius.only(
-                                      bottomLeft: Radius.circular(width * 0.05),
-                                      bottomRight:
-                                          Radius.circular(width * 0.05))),
-                              //color: AppColors.secondaryolor,
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      Column(
-                                        children: [
-                                          Stack(
-                                            children: [
-                                              Container(
-                                                width: width * 0.2,
-                                                height: height * 0.12,
-                                                decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                        width: 2,
-                                                        color: Colors.white)),
-                                                child: Padding(
-                                                  padding: EdgeInsets.all(
-                                                      0.0), // Border thickness
-                                                  child: CircleAvatar(
-                                                    radius:
-                                                        45, // Inner avatar size
 
-                                                    backgroundImage: imgPath !=
-                                                            null
-                                                        ? FileImage(
-                                                            File(imgPath!))
-                                                        : AssetImage(
-                                                            "assets/images/fullbody2.jpeg"),
-
-                                                    backgroundColor:
-                                                        AppColors.secondaryolor,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Text(
-                                            "$name",
-                                            style: TextStyle(
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.white),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          } else if (state is UserLoading) {
-                            return Center(child: CircularProgressIndicator());
-                          } else {
-                            return Center(child: Text('Error loading user'));
-                          }
-                        },
-                      ),
                 SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0),
@@ -169,7 +89,7 @@ class _AllworkoutPageState extends State<AllworkoutPage> {
 
                 // Flexible ListView.builder
                 Container(
-                  height: height * 0.7,
+                  //height: height * 0.7,
                   decoration: BoxDecoration(
                       //color: Colors.white
                       ),
@@ -189,33 +109,36 @@ class _AllworkoutPageState extends State<AllworkoutPage> {
                                   PageTransition(
                                       type: PageTransitionType.leftToRight,
                                       child: Activescreen(
-                                          short_description: workoutlist[index]
-                                              .shortdescription,
-                                          not_to_do:
-                                              allworkoutlist[index].not_to_do,
-                                          instructions:
-                                              allworkoutlist[index].instructions,
-                                          focuss_area:
-                                              allworkoutlist[index].focuss_area,
-                                          duration: workoutlist[index].duration,
-                                          calories: workoutlist[index].calories,
-                                          workoutName:
-                                              allworkoutlist[index].workoutname,
-                                          day: 0,
-                                          exercises:
-                                              allworkoutlist[index].exercises,
-                                          exerciseDetails: workoutlist[index]
-                                              .exercisedetaillist,
-                                          exerciseImages: [],
-                                          exercisegifs: allworkoutlist[index]
-                                              .exercisegifs,
-                                          exerciseaudios: allworkoutlist[index]
-                                              .exerciseaudios,
-                                          img: workoutlist[index].image,
-                                          ischallenge: false, ChallengeName: '',)));
+                                        short_description:
+                                            workoutlist[index].shortdescription,
+                                        not_to_do:
+                                            allworkoutlist[index].not_to_do,
+                                        instructions:
+                                            allworkoutlist[index].instructions,
+                                        focuss_area:
+                                            allworkoutlist[index].focuss_area,
+                                        duration: workoutlist[index].duration,
+                                        calories: workoutlist[index].calories,
+                                        workoutName:
+                                            allworkoutlist[index].workoutname,
+                                        day: 0,
+                                        exercises:
+                                            allworkoutlist[index].exercises,
+                                        exerciseDetails: workoutlist[index]
+                                            .exercisedetaillist,
+                                        exerciseImages: [],
+                                        exercisegifs:
+                                            allworkoutlist[index].exercisegifs,
+                                        exerciseaudios: allworkoutlist[index]
+                                            .exerciseaudios,
+                                        img: workoutlist[index].image,
+                                        ischallenge: false,
+                                        ChallengeName: '',
+                                      )));
                             },
                             child: Container(
                               child: ListTile(
+                                
                                 leading: Container(
                                   width: 100,
                                   height: 300,
@@ -236,6 +159,7 @@ class _AllworkoutPageState extends State<AllworkoutPage> {
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700),
                                 ),
+                                /*trailing:Icon(Icons.navigate_next),*/
                                 subtitle: Row(
                                   children: [
                                     Row(

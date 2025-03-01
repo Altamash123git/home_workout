@@ -6,12 +6,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:home_workout/UTILS/appcolors.dart';
 import 'package:home_workout/screens/ActiveScreen.dart';
-import 'package:home_workout/userInfo/user_info_values.dart';
+import 'package:home_workout/screens/new_activate_screen.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase_repo.dart';
-import '../models/chalenges.dart';
 import '../models/workout_model.dart';
 import '../userInfo/UserData_bloc/Userbloc.dart';
 import '../userInfo/UserData_bloc/userEvent.dart';
@@ -20,12 +19,16 @@ import '../userInfo/UserData_bloc/userState.dart';
 class Challengesscreen extends StatefulWidget {
   //final ChallengeModel challenge;
   final WorkoutModel workout;
- final bool isChallenge;
- final int days;
- final String challengename;
+  final bool isChallenge;
+  final int days;
+  final String challengename;
 
   const Challengesscreen(
-      {super.key, required this.workout,required this.isChallenge,required this.days, required this.challengename});
+      {super.key,
+      required this.workout,
+      required this.isChallenge,
+      required this.days,
+      required this.challengename});
 
   @override
   State<Challengesscreen> createState() => _ChallengesscreenState();
@@ -79,7 +82,7 @@ class _ChallengesscreenState extends State<Challengesscreen> {
         title: Text(
           "${widget.workout.workoutname} ",
           style: TextStyle(
-              fontSize: IsLandscape?width*0.03:width*0.05,
+              fontSize: IsLandscape ? width * 0.03 : width * 0.05,
               fontWeight: FontWeight.w700,
               color: Colors.white),
         ),
@@ -105,115 +108,237 @@ class _ChallengesscreenState extends State<Challengesscreen> {
                             final name = state.userData['name'] ?? 'User';
                             return
                               Container(
-                                height: height*0.21,
-                                padding: EdgeInsets.all(10),
-                                //margin: EdgeInsets.symmetric(horizontal: 5),
-                                decoration: BoxDecoration(
-                                    color: AppColors.secondaryolor,
-                                    borderRadius:BorderRadius.only(
-                                        bottomLeft: Radius.circular(width*0.05),
-                                        bottomRight: Radius.circular(width*0.05)
-                                    )),
-                                //color: AppColors.secondaryolor,
-                                child: Column(
-                                  children: [
-                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                      children: [
+                              height: height * 0.21,
+                              padding: EdgeInsets.all(10),
+                              //margin: EdgeInsets.symmetric(horizontal: 5),
+                              decoration: BoxDecoration(
+                                  color: AppColors.secondaryolor,
+                                  borderRadius: BorderRadius.only(
+                                      bottomLeft: Radius.circular(width * 0.05),
+                                      bottomRight:
+                                          Radius.circular(width * 0.05))),
+                              //color: AppColors.secondaryolor,
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Stack(
+                                            children: [
+                                              Container(
+                                                width: width * 0.2,
+                                                height: height * 0.1,
+                                                decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                        width: 2,
+                                                        color: Colors.white)),
+                                                child: Padding(
+                                                  padding: EdgeInsets.all(
+                                                      0.0), // Border thickness
+                                                  child: CircleAvatar(
+                                                    radius:
+                                                        45, // Inner avatar size
 
-                                        Column(
-                                          children: [
-                                            Stack(
-                                              children: [
-                                                Container(
-                                                  width: width*0.2,
-                                                  height: height*0.1,
-                                                  decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      border: Border.all(
-                                                          width: 2,
-                                                          color: Colors.white)),
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(
-                                                        0.0), // Border thickness
-                                                    child: CircleAvatar(
-                                                      radius: 45, // Inner avatar size
+                                                    backgroundImage: imgPath !=
+                                                            null
+                                                        ? FileImage(
+                                                            File(imgPath!))
+                                                        : AssetImage(
+                                                            "assets/images/fullbody2.jpeg"),
 
-                                                      backgroundImage: imgPath != null
-                                                          ? FileImage(File(imgPath!))
-                                                          : AssetImage(
-                                                          "assets/images/fullbody2.jpeg"),
-
-                                                      backgroundColor:
-                                                      AppColors.secondaryolor,
-                                                    ),
+                                                    backgroundColor:
+                                                        AppColors.secondaryolor,
                                                   ),
                                                 ),
-
-                                              ],
-                                            ),
-
-                                          ],
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Icon(
+                                            Icons.local_fire_department,
+                                            color: Colors.white,
+                                            size: 40,
+                                          ),
+                                          Text(
+                                            "kcal ${widget.workout.calories}",
+                                            style: TextStyle(
+                                                fontSize: width * 0.04,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                        SizedBox(
+                                          height: 12,
                                         ),
+                                          Text(
+                                            "$name",
+                                            style: TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          Icon(
+                                            Icons.timer,
+                                            color: Colors.white,
+                                            size: 37,
+                                          ),
+                                          Text(
+                                            "${widget.workout.duration} min",
+                                            style: TextStyle(
+                                                fontSize: width * 0.04,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            );
+                          } else if (state is UserLoading) {
+                            return     Container(
+                              height: height * 0.21,
+                              padding: EdgeInsets.all(10),
+                              //margin: EdgeInsets.symmetric(horizontal: 5),
+                              decoration: BoxDecoration(
+                                  color: AppColors.secondaryolor,
+                                  borderRadius: BorderRadius.only(
+                                      bottomLeft: Radius.circular(width * 0.05),
+                                      bottomRight:
+                                      Radius.circular(width * 0.05))),
+                              //color: AppColors.secondaryolor,
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Stack(
+                                            children: [
+                                              Container(
+                                                width: width * 0.2,
+                                                height: height * 0.1,
+                                                decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                        width: 2,
+                                                        color: Colors.white)),
+                                                child: Padding(
+                                                  padding: EdgeInsets.all(
+                                                      0.0), // Border thickness
+                                                  child: CircleAvatar(
+                                                    radius:
+                                                    45, // Inner avatar size
 
-                                      ],
-                                    ),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                      children: [
+                                                    backgroundImage: imgPath !=
+                                                        null
+                                                        ? FileImage(
+                                                        File(imgPath!))
+                                                        : AssetImage(
+                                                        "assets/images/fullbody2.jpeg"),
 
-                                        Column(
-                                          children: [
-                                            Icon(Icons.local_fire_department, color: Colors.white,size: 40,),
-                                            Text(
-                                              "kcal ${widget.workout.calories}",
-                                              style: TextStyle(
-                                                  fontSize: width*0.04,
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
-                                        ),
-
-                                        Text("$name",  style: TextStyle(
+                                                    backgroundColor:
+                                                    AppColors.secondaryolor,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Icon(
+                                            Icons.local_fire_department,
+                                            color: Colors.white,
+                                            size: 40,
+                                          ),
+                                          Text(
+                                            "kcal ${widget.workout.calories}",
+                                            style: TextStyle(
+                                                fontSize: width * 0.04,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        "user",
+                                        style: TextStyle(
                                             fontSize: 22,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white),),
-                                        Column(
-                                          children: [
-                                            Icon(Icons.timer, color: Colors.white,size: 37,),
-                                            Text(
-                                              "${widget.workout.duration} min",
-                                              style: TextStyle(
-                                                  fontSize:  width*0.04,
-                                                  color: Colors.white,fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    )
-                                  ],
-                                ),
-                              );
-                          } else if (state is UserLoading) {
-                            return Center(
-                                child: CircularProgressIndicator());
+                                            color: Colors.white),
+                                      ),
+                                      Column(
+                                        children: [
+                                          Icon(
+                                            Icons.timer,
+                                            color: Colors.white,
+                                            size: 37,
+                                          ),
+                                          Text(
+                                            "${widget.workout.duration} min",
+                                            style: TextStyle(
+                                                fontSize: width * 0.04,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            );;
                           } else {
-                            return Center(
-                                child: Text('Error loading user'));
+                            return Center(child: Text('Error loading user'));
                           }
                         },
                       ),
                 SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                  child: Text("Exercises",style: TextStyle(fontSize: 18,color: Color(0xff1e1e1e),fontWeight: FontWeight.w700),),
+                  child: Text(
+                    "Exercises",
+                    style: TextStyle(
+                        fontSize: 18,
+                        color: Color(0xff1e1e1e),
+                        fontWeight: FontWeight.w700),
+                  ),
                 ),
 
                 // Flexible ListView.builder
                 Container(
-
-                  height: height * 0.7,
+                  //height: height * 0.7,
                   decoration: BoxDecoration(
                       //color: Colors.white
                       ),
@@ -226,18 +351,17 @@ class _ChallengesscreenState extends State<Challengesscreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-
                           Container(
                             child: ListTile(
                               leading: Container(
-                                width: 100,
                                 height: 300,
+                                width: 100,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
                                   image: DecorationImage(
-                                    image: AssetImage(widget
-                                        .workout.exercisegiflist[index]),
+                                    image: AssetImage(
+                                        widget.workout.exercisegiflist[index]),
                                     fit: BoxFit.contain,
                                   ),
                                 ),
@@ -245,23 +369,49 @@ class _ChallengesscreenState extends State<Challengesscreen> {
                               title: Text(
                                 "${widget.workout.exerciselist[index]}",
                                 style: TextStyle(
-                                    color: Color(0xff4a4545), fontSize: 18,fontWeight: FontWeight.w700),
+                                    color: Color(0xff4a4545),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700),
                               ),
                               subtitle: Row(
-
                                 children: [
-                                  Row(children: [
-                                    Icon(Icons.timer,color: AppColors.secondaryolor,size: 20,),
-                                    SizedBox(width: 4,),
-                                    Text("00:30 sec",style: TextStyle(color: Color(0xff4a4545)),)
-                                  ],),
-                                  SizedBox(width: 40,),
-                                  Row(children: [
-                                    Icon(Icons.local_fire_department,color: AppColors.secondaryolor,size: 20,),
-                                    SizedBox(width: 4,),
-                                    Text("18 kcal",style: TextStyle(color: Color(0xff4a4545)),)
-                                  ],),
-
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.timer,
+                                        color: AppColors.secondaryolor,
+                                        size: 20,
+                                      ),
+                                      SizedBox(
+                                        width: 4,
+                                      ),
+                                      Text(
+                                        "00:30 sec",
+                                        style:
+                                            TextStyle(color: Color(0xff4a4545)),
+                                      )
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    width: 40,
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.local_fire_department,
+                                        color: AppColors.secondaryolor,
+                                        size: 20,
+                                      ),
+                                      SizedBox(
+                                        width: 4,
+                                      ),
+                                      Text(
+                                        "18 kcal",
+                                        style:
+                                            TextStyle(color: Color(0xff4a4545)),
+                                      )
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -280,47 +430,61 @@ class _ChallengesscreenState extends State<Challengesscreen> {
         ),
       ),
       bottomNavigationBar: InkWell(
-        onTap:() {
+        onTap: () {
           Navigator.pushReplacement(
             context,
             PageTransition(
-              child: Activescreen(
-                img: widget.workout.image,
-                ischallenge: widget.isChallenge,
-                day: widget.days +1,
-                exercisegifs: widget.workout.exercisegiflist,
-                workoutName: widget.workout.workoutname,
-                exercises: widget.workout.exerciselist,
-                exerciseDetails: widget.workout.exercisedetaillist,
-                exerciseaudios: widget.workout.exerciseaudiolist,
-                exerciseImages: [],
-                duration: widget.workout.duration,
-                calories: widget.workout.calories,
-                not_to_do: widget.workout.not_to_do,
-                instructions: widget.workout.instructions,
-                focuss_area: widget.workout.focus_areas,
-                short_description: widget.workout.shortdescription, ChallengeName: widget.challengename,
-              ),
+              child: widget.isChallenge
+                  ? ChallengesActiveScreen(
+                      weekwise: widget.workout.weekwise,
+                      ischallenge: true,
+                      day: widget.days + 1,
+                      ChallengeName: widget.challengename,
+                      workoutName: widget.workout.workoutname,
+                      calories: widget.workout.calories,
+                      duration: widget.workout.duration,
+                      img: widget.workout.image,
+                      exerciseImages: [],
+                      exerciseDetails: widget.workout.exercisedetaillist,
+                    )
+                  : Activescreen(
+                      img: widget.workout.image,
+                      ischallenge: false,
+                      day: widget.days + 1,
+                      exercisegifs: widget.workout.exercisegiflist,
+                      workoutName: widget.workout.workoutname,
+                      exercises: widget.workout.exerciselist,
+                      exerciseDetails: widget.workout.exercisedetaillist,
+                      exerciseaudios: widget.workout.exerciseaudiolist,
+                      exerciseImages: [],
+                      duration: widget.workout.duration,
+                      calories: widget.workout.calories,
+                      not_to_do: widget.workout.not_to_do,
+                      instructions: widget.workout.instructions,
+                      focuss_area: widget.workout.focus_areas,
+                      short_description: widget.workout.shortdescription,
+                      ChallengeName: widget.challengename,
+                    ),
               type: PageTransitionType.leftToRight,
             ),
           );
-        } ,
+        },
         child: Container(
-          margin: EdgeInsets.all(height*0.02),
+          margin: EdgeInsets.all(height * 0.02),
           alignment: Alignment.center,
-
           width: 200,
-          height: height*0.08,
+          height: height * 0.07,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: AppColors.secondaryolor,
           ),
-          child: Text("Start",style: TextStyle(fontSize: 20,color: Colors.white,fontWeight: FontWeight.w700),),
+          child: Text(
+            "Start",
+            style: TextStyle(
+                fontSize: 20, color: Colors.white, fontWeight: FontWeight.w700),
+          ),
         ),
       ),
-
     );
   }
 }
-
-

@@ -88,25 +88,18 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                   SizedBox(
                     height: height * 0.1,
                   ),
-
-
                   Container(
-
                     alignment: Alignment.center,
                     width: width * 0.22,
                     height: height * 0.1,
                     decoration: BoxDecoration(
-                      border: Border.all(
-                          width: 2,color: Colors.white
-                      ),
+                      border: Border.all(width: 2, color: Colors.white),
                       boxShadow: [
-
                         BoxShadow(
                             offset: Offset(0, 3),
                             blurRadius: 4,
                             spreadRadius: 0,
-                            color:Colors.grey
-                        )
+                            color: Colors.grey)
                       ],
                       shape: BoxShape.circle,
 
@@ -118,22 +111,20 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            fontSize: isLandscape ? width * 0.03 : width * 0.05)),
+                            fontSize:
+                                isLandscape ? width * 0.03 : width * 0.05)),
                   ),
                   SizedBox(
-                    height: height*0.01,
-
+                    height: height * 0.01,
                   ),
-                  Text("What is Your Height ",style:
-                  TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w900,
-
-
-                      shadows: [
-                        Shadow(color: Colors.grey)
-                      ],
-                      fontSize: isLandscape ? width * 0.03 : width * 0.05),),
+                  Text(
+                    "What is Your Height ",
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w900,
+                        shadows: [Shadow(color: Colors.grey)],
+                        fontSize: isLandscape ? width * 0.03 : width * 0.05),
+                  ),
                   SizedBox(
                     height: height * 0.07,
                   ),
@@ -167,24 +158,27 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                                 Padding(
                                   padding: EdgeInsets.symmetric(
                                       horizontal: 20, vertical: 0),
-                                  child: Text(' Ft',style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500
-                                  ),),
+                                  child: Text(
+                                    ' Ft',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500),
+                                  ),
                                 ),
                                 Padding(
                                   padding: EdgeInsets.symmetric(
                                       horizontal: 20, vertical: 0),
-                                  child: Text(' Cm',style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500
-                                  ),),
+                                  child: Text(
+                                    ' Cm',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           SizedBox(height: 20),
-
                           Expanded(
                             child: Stack(
                               children: [
@@ -192,10 +186,12 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                                 ListView.builder(
                                   controller: _scrollController,
                                   scrollDirection: Axis.horizontal,
-                                  itemCount: isFeet ? 71 : 201, // Feet range: 3-10 ft, CM range: 100-300 cm
+                                  itemCount: isFeet
+                                      ? 71
+                                      : 201, // Feet range: 3-10 ft, CM range: 100-300 cm
                                   itemBuilder: (context, index) {
                                     bool isDivisibleBy10 = index % 10 == 0;
-                                    bool isDivisibleBy5=index%5==0;
+                                    bool isDivisibleBy5 = index % 5 == 0;
                                     double value = isFeet
                                         ? (3 + index * 0.1).toDouble()
                                         : (100 + index).toDouble();
@@ -211,17 +207,30 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                                           children: [
                                             Column(
                                               children: [
-                                                Text(isDivisibleBy5 || isDivisibleBy10?"${value.toStringAsFixed(1)}":""),
+                                                Text(isDivisibleBy5 ||
+                                                        isDivisibleBy10
+                                                    ? "${value.toStringAsFixed(1)}"
+                                                    : ""),
                                                 Container(
-                                                  height: isDivisibleBy5 || isDivisibleBy10 ? 70 : 30,
+                                                  height: isDivisibleBy5 ||
+                                                          isDivisibleBy10
+                                                      ? 70
+                                                      : 30,
                                                   alignment: Alignment.center,
                                                   //padding: EdgeInsets.only(top: isDivisibleBy10?0:20),
-                                                  margin: EdgeInsets.only(top:isDivisibleBy5 || isDivisibleBy10?0:20),
+                                                  margin: EdgeInsets.only(
+                                                      top: isDivisibleBy5 ||
+                                                              isDivisibleBy10
+                                                          ? 0
+                                                          : 20),
                                                   width: 2,
                                                   decoration: BoxDecoration(
                                                     border: Border.all(
-                                                      color: selectedHeight == value ? Colors.red : Colors.grey,
-                                                      width: 1,
+                                                      color: selectedHeight ==
+                                                              value
+                                                          ? Colors.red
+                                                          : Colors.grey,
+                                                      width: 2.5,
                                                     ),
                                                     //borderRadius: BorderRadius.circular(8),
                                                   ),
@@ -231,7 +240,8 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                                                         : '${value.toInt()} cm',
                                                     style: TextStyle(
                                                       fontSize: 30,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                 ),
@@ -249,7 +259,8 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                                   onHorizontalDragUpdate: (details) {
                                     // Update horizontal scrolling when the stick is dragged
                                     _scrollController.jumpTo(
-                                      _scrollController.offset - details.delta.dx, // Adjust offset
+                                      _scrollController.offset -
+                                          details.delta.dx, // Adjust offset
                                     );
                                   },
                                   child: Container(
@@ -263,7 +274,6 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                               ],
                             ),
                           ),
-
                           SizedBox(height: 20),
                           Container(
                             width: 100,
@@ -271,8 +281,10 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                               children: [
                                 Text(
                                   ' ${selectedHeight > 0 ? '${isFeet ? '${selectedHeight.toStringAsFixed(1)} ft' : '$selectedHeight. cm'}' : 'None'}',
-                                  style: TextStyle(fontSize: 24,
-                                  fontWeight: FontWeight.bold,color: Colors.black),
+                                  style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black),
                                 ),
                                 Divider(
                                   height: 4,
@@ -289,44 +301,40 @@ class _HeightInfoPageState extends State<HeightInfoPage> {
                   SizedBox(
                     height: height * 0.04,
                   ),
-
                   SizedBox(
                     height: height * 0.09,
                   ),
                   InkWell(
                     onTap: () {
-            if (selectedHeight != 0) {
-            UserInfoValues.height = convertftintocm().toString();
+                      if (selectedHeight != 0) {
+                        UserInfoValues.height = convertftintocm().toString();
 
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-            " height saved: ${convertftintocm()} cm")));
-            Navigator.push(
-            context,
-            PageTransition(
-            type: PageTransitionType.rightToLeftWithFade,
-            child: WeightPage()));
-            } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-            "please select height",
-            style: TextStyle(color: Colors.red),
-            )));
-            }
-            },
+
+                        Navigator.push(
+                            context,
+                            PageTransition(
+                                type: PageTransitionType.rightToLeftWithFade,
+                                child: WeightPage()));
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                          "please select height",
+                          style: TextStyle(color: Colors.red),
+                        )));
+                      }
+                    },
                     child: Container(
                       alignment: Alignment.center,
                       width: 150,
                       height: 30,
                       decoration: BoxDecoration(
                           color: AppColors.secondaryolor,
-                          borderRadius: BorderRadius.circular(7)
-                      ),
+                          borderRadius: BorderRadius.circular(7)),
                       child: Text("Next",
                           style: TextStyle(
                               color: Colors.white,
                               fontSize:
-                              isLandscape ? width * 0.03 : width * 0.05)),
+                                  isLandscape ? width * 0.03 : width * 0.05)),
                     ),
                   )
                 ],

@@ -16,6 +16,8 @@ import 'package:home_workout/screens/New_Splash_Page.dart';
 import 'package:home_workout/screens/ProfilePage.dart';
 import 'package:home_workout/screens/Sign_in_page.dart';
 import 'package:home_workout/screens/UserInfo.dart';
+import 'package:home_workout/screens/WorkoutScreen.dart';
+import 'package:home_workout/screens/allworkout_detailpage.dart';
 import 'package:home_workout/screens/newsignin.dart';
 import 'package:home_workout/screens/signin_code/google_login.dart';
 import 'package:home_workout/screens/splash_screen.dart';
@@ -28,11 +30,18 @@ import 'package:home_workout/userInfo/weight_page.dart';
 import 'package:home_workout/workout_databse.dart';
 //import 'package:timezone/data/latest.dart' as tz;
 
-void main() async{
+import 'package:flutter/services.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  // Restrict to portrait mode
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
+  await Firebase.initializeApp();
 
   // Initialize Hive
   await Hive.initFlutter();
@@ -43,22 +52,24 @@ void main() async{
   var ne2 = await Hive.openBox<String>('username');
   var ne3 = await Hive.openBox('days');
 
-  var workoutduration= await Hive.openBox("workouttime");
+  var workoutduration = await Hive.openBox("workouttime");
   await Hive.openBox("newdays");
- await Hive.openBox("userProfile");
- await Hive.openBox("restduration");
+  await Hive.openBox("userProfile");
+  await Hive.openBox("restduration");
   await Hive.openBox("guideduration");
   await Hive.openBox("exerciseduration");
+
   runApp(
-    MultiBlocProvider(providers:[
-      BlocProvider(create: (context)=>FavouritesBloc(dbHelper: DBHelper.getinstance())),
-      BlocProvider(create: (context)=>HistoryBloc(dbHelper: DBHelper.getinstance())),
-      BlocProvider<UserBloc>(create: (context)=>UserBloc(userRepository: UserRepository()))], child: const MyApp()),
-
-
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => FavouritesBloc(dbHelper: DBHelper.getinstance())),
+        BlocProvider(create: (context) => HistoryBloc(dbHelper: DBHelper.getinstance())),
+        BlocProvider<UserBloc>(create: (context) => UserBloc(userRepository: UserRepository())),
+      ],
+      child:  MyApp(),
+    ),
   );
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -75,9 +86,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: NewSplashPage(),
+      home:NewSplashPage() ,
     );
   }
 }
-
 

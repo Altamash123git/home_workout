@@ -69,8 +69,8 @@ body: pages[currindx],
         if (isSelected)
           Container(
             //margin: EdgeInsets.only(bottom: 20),
-            width: 50,
-            height: 40,
+            width: 40,
+            height: 30,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                   colors: [
@@ -85,7 +85,7 @@ body: pages[currindx],
               //shape: BoxShape.circle, // Rounded circle for the selected item
             ),
           ),
-        Icon(icon, size: 28, color: isSelected ? Colors.white : Colors.white70),
+        Icon(icon, size: 25, color: isSelected ? Colors.white : Colors.white70),
       ],
     );
   }

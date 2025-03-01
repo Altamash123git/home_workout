@@ -91,6 +91,11 @@ class DBHelper {
         whereArgs: [id],);
     return rowsDeleted>0;
   }
+  Future<bool> deleteAllFavourites()async{
+    var db= await getDB();
+    var rowsDeleted=await db.delete(Favourites_table);
+    return rowsDeleted>0;
+  }
   Future<bool> deleteAllExercises() async {
     var db = await getDB();
     var rowsDeleted = await db.delete(Exercise_Table);

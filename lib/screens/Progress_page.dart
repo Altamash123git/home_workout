@@ -97,7 +97,7 @@ class _WorkoutChallengePageState extends State<WorkoutChallengePage> {
                                 color: Colors.white,
                               ),
                               child: Icon(
-                                FontAwesomeIcons.solidIdBadge,
+                                FontAwesomeIcons.medal,
                                 color: Colors.blue,
                                 size: 20,
                               ),
@@ -107,6 +107,7 @@ class _WorkoutChallengePageState extends State<WorkoutChallengePage> {
                       ),
                       SizedBox(width: 16),
                       Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(widget.workoutName, style: TextStyle(
@@ -115,7 +116,7 @@ class _WorkoutChallengePageState extends State<WorkoutChallengePage> {
                             fontSize: 18,
                           ),),
                           Text(
-                            " WORKOUT CHALLENGE",
+                            "WORKOUT CHALLENGE",
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

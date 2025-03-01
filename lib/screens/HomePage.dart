@@ -23,6 +23,10 @@ import 'package:page_transition/page_transition.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../HistroyBloc/history_bloc.dart';
+import '../HistroyBloc/history_event.dart';
+import '../favourites_bloc/favourites_bloc.dart';
+import '../favourites_bloc/favourites_event.dart';
 import '../firebase_repo.dart';
 import '../userInfo/UserData_bloc/Userbloc.dart';
 import '../userInfo/UserData_bloc/userEvent.dart';
@@ -62,9 +66,9 @@ class _HomepageState extends State<Homepage> with SingleTickerProviderStateMixin
     print("All keys: ${namebox.keys}");
     print("All values: ${namebox.values}");
 
-    final dayFullBody = namebox.get("Full Body");
-    final daysUpperBody=namebox.get("Upper Body");
-    final daysLowerBody=namebox.get("Lower Body");
+   var   dayFullBody = namebox.get("Full Body");
+   var   daysUpperBody=namebox.get("Upper Body");
+    var daysLowerBody=namebox.get("Lower Body");
     print("Retrieved day: $dayFullBody");
     print("Retrieved day: $daysUpperBody");
     print("Retrieved day: $daysLowerBody");
@@ -92,6 +96,47 @@ class _HomepageState extends State<Homepage> with SingleTickerProviderStateMixin
 
     setState(() {});
   }
+  void resetDaysAndDurations() async {
+    var namebox = await Hive.openBox("namebox");
+    var guidebox = await Hive.openBox("guideduration");
+    var restbox = await Hive.openBox("restduration");
+    var exercise = await Hive.openBox("exerciseduration");
+
+    // Set all days to 0
+    await namebox.put("Full Body", 0);
+    await namebox.put("Upper Body", 0);
+    await namebox.put("Lower Body", 0);
+
+    // Retrieve the updated values
+    var dayFullBody = namebox.get("Full Body");
+    var daysUpperBody = namebox.get("Upper Body");
+    var daysLowerBody = namebox.get("Lower Body");
+
+    print("Updated day: $dayFullBody");
+    print("Updated day: $daysUpperBody");
+    print("Updated day: $daysLowerBody");
+
+    setState(() {
+      daysFull = dayFullBody ?? 0;
+      daysUpper = daysUpperBody ?? 0;
+      daysLower = daysLowerBody ?? 0;
+    });
+
+    // Set all durations to 0
+    await guidebox.put("guideduration", 0);
+    await restbox.put("restduration", 0);
+    await exercise.put("exerciseduration", 0);
+
+    print("Guide duration reset to 0");
+    print("Rest duration reset to 0");
+    print("Exercise duration reset to 0");
+  }
+
+  void RestartWorkout(BuildContext context) {
+
+    context.read<FavouritesBloc>().add(DeletAllFavouritesEvent());
+    context.read<HistoryBloc>().add(AllHistoryDeleteEvent());
+  }
 
   Future<void> _getCurrentVolume() async {
     try {
@@ -113,19 +158,20 @@ class _HomepageState extends State<Homepage> with SingleTickerProviderStateMixin
     });
     FlutterVolumeController.setVolume(volume); // Update system volume asynchronously
   }
+
   Future<void> _showVolumeDialog() async {
     await _getCurrentVolume(); // Fetch the current volume before showing the dialog
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Volume Setting"),
+          title: Text("Volume Setting",style: DrawerTextStyle(),textAlign: TextAlign.center,),
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return Column(
                 mainAxisSize: MainAxisSize.min, // Compact dialog
                 children: [
-                  Text("Current Volume: ${(_currentVolume * 100).toInt()}%"),
+                  Text("Current Volume: ${(_currentVolume * 100).toInt()}%",style: DrawerTextStyle()),
                   Slider(
                     activeColor: AppColors.secondaryolor,
                     value: _currentVolume,
@@ -141,35 +187,154 @@ class _HomepageState extends State<Homepage> with SingleTickerProviderStateMixin
                       _setVolume(newValue); // Update system volume
                     },
                   ),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  InkWell(
+                    onTap: (){
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        /* boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey,
+                                    blurRadius: 2.0, // Elevation effect
+                                    offset: Offset(0, 3),
+
+                                  ),
+                                ],*/
+                          borderRadius: BorderRadius.circular(7),
+                          color: AppColors.secondaryolor
+                      ),
+                      width: 70,
+                      height: 30,
+                      child: Text("Finished",style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),),
+
+                    ),
+                  ),
                 ],
               );
             },
           ),
           actions: [
-            TextButton(
-             style:TextButton.styleFrom(
-               backgroundColor: AppColors.secondaryolor
-             ),
-              onPressed: () {
-                Navigator.pop(context); // Close the dialog
-              },
-              child: Text("Finished",style: TextStyle(color: Colors.white),),
-            ),
+
           ],
         );
       },
     );
   }
+  void showRestartDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text("Restart Workout",style: DrawerTextStyle(),textAlign: TextAlign.center,),
+          content: Container(
+            height: 200,
+            child: Column(
 
-void TimerDialogue({required double width}){
+              children: [
+                Text("Are you sure you want to restart your workout? This will delete all favorites and workout history.",style: DrawerTextStyle()),
+                SizedBox(
+                  height: 60,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    InkWell(
+                      onTap: (){
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          /* boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey,
+                                      blurRadius: 2.0, // Elevation effect
+                                      offset: Offset(0, 3),
+
+                                    ),
+                                  ],*/
+                            borderRadius: BorderRadius.circular(7),
+                            color: AppColors.secondaryolor
+                        ),
+                        width: 70,
+                        height: 30,
+                        child: Text("Cancel",style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),),
+
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                    RestartWorkout(context); // Call function to reset workout
+                    resetDaysAndDurations(); // Reset durations after workout restart
+                    Navigator.pop(dialogContext); // Close the dialog
+                    },
+
+
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                         /*   boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey,
+                                blurRadius: 2.0, // Elevation effect
+                                offset: Offset(0, 3),
+
+                              ),
+                            ],*/
+                            borderRadius: BorderRadius.circular(7),
+                            color: AppColors.secondaryolor
+                        ),
+                        width: 70,
+                        height: 30,
+                        child: Text("Restart",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),),
+
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+      /*    actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext); // ❌ No reset on cancel
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                RestartWorkout(context); // Call function to reset workout
+                resetDaysAndDurations(); // Reset durations after workout restart
+                Navigator.pop(dialogContext); // Close the dialog
+              },
+              child: Text("OK"),
+            ),
+          ],*/
+        );
+      },
+    );
+  }
+
+
+
+
+
+
+  void TimerDialogue({required double width}){
     showDialog(context: context, builder: (BuildContext context){
       return Container(
         color: Colors.white.withOpacity(0.4),
         child: AlertDialog(
           elevation: 11,
           shadowColor: Colors.black,
-        
-        
+
+
           title: Column(
             children: [
               Icon(Icons.watch_later_rounded,color: AppColors.secondaryolor,size: 29,),
@@ -254,16 +419,16 @@ void TimerDialogue({required double width}){
                           child: Container(
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                                boxShadow: [
+                               /* boxShadow: [
                                   BoxShadow(
                                     color: Colors.grey,
                                     blurRadius: 2.0, // Elevation effect
                                     offset: Offset(0, 3),
 
                                   ),
-                                ],
-                              borderRadius: BorderRadius.circular(7),
-                              color: AppColors.secondaryolor
+                                ],*/
+                                borderRadius: BorderRadius.circular(7),
+                                color: AppColors.secondaryolor
                             ),
                             width: 70,
                             height: 30,
@@ -272,17 +437,17 @@ void TimerDialogue({required double width}){
                           ),
                         ),
                         InkWell(
-        
+
                           onTap: (){
-        
+
                             final guidebox =Hive.box("guideduration");
                             final restbox=  Hive.box("restduration");
                             final exercise= Hive.box("exerciseduration");
-        
+
                             guidebox.put("guidetime", guideDuration);
                             restbox.put("resttime", restDuration);
                             exercise.put("exercisetime", exerciseDuration);
-        
+
                             //guidebox.put("",);
                             setState(() {});
                             Navigator.pop(context);
@@ -295,7 +460,7 @@ void TimerDialogue({required double width}){
                                     color: Colors.grey,
                                     blurRadius: 2.0, // Elevation effect
                                     offset: Offset(0, 3),
-        
+
                                   ),
                                 ],
                                 borderRadius: BorderRadius.circular(7),
@@ -304,7 +469,7 @@ void TimerDialogue({required double width}){
                             width: 70,
                             height: 30,
                             child: Text("Set",textAlign: TextAlign.center,style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.w600),),
-        
+
                           ),
                         ),
                       ],
@@ -317,7 +482,7 @@ void TimerDialogue({required double width}){
         ),
       );
     });
-}
+  }
 
 
 
@@ -333,99 +498,119 @@ void TimerDialogue({required double width}){
     var height = MediaQuery.of(context).size.height;
     bool isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
-    bool IsLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
-    return Scaffold(
-      appBar:
-      AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 4.0,bottom: 4),
-          child:
-          Stack(
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(width: 1,color: Colors.white)
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(
-                      0.0), // Border thickness
-                  child: CircleAvatar(
-                    radius:
-                    45, // Inner avatar size
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-                    backgroundImage: imgPath != null
-                        ? FileImage(File(imgPath!))
-                        : AssetImage("assets/images/fullbody2.jpeg"),
-
-                    backgroundColor: AppColors.secondaryolor,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 10,
-                child: Container(
+    return WillPopScope(
+      onWillPop: () async {
+        // Reset orientation to allow both landscape and portrait when leaving
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]);
+        return true;
+      },
+      child: Scaffold(
+        appBar:
+        AppBar(
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 4.0,bottom: 4),
+            child:
+            Stack(
+              children: [
+                Container(
+                  width: 70,
+                  height: 70,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(width: 1,color: Colors.white)
                   ),
+                  child: Padding(
+                    padding: EdgeInsets.all(
+                        0.0), // Border thickness
+                    child: CircleAvatar(
+                      radius:
+                      45, // Inner avatar size
 
+                      backgroundImage: imgPath != null
+                          ? FileImage(File(imgPath!))
+                          : AssetImage("assets/images/fullbody2.jpeg"),
+
+                      backgroundColor: AppColors.secondaryolor,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                Positioned(
+                  bottom: 0,
+                  right: 10,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+
+                  ),
+                ),
+              ],
+            ),
           ),
+          title:
+          uid.isEmpty
+              ? Container(
+            child: CircularProgressIndicator(),
+          )
+              :
+          BlocProvider(
+            create: (context) =>
+            UserBloc(userRepository: UserRepository())
+              ..add(FetchCompleteUserData(uid)),
+            child:
+            BlocBuilder<UserBloc, UserState>(
+                builder: (context, state) {
+                  if (state is UserLoaded) {
+                    var data= state.userData;
+                    userName=state.userData['name'] ??
+                        'User';
+
+                    final name = state.userData['name'] ??
+                        'User';
+                    var BMI= state.userData["BMI"];
+
+                    return
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Welcome Back...!",style:  TextStyle(fontSize: 17,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
+                          Text("${name},Ready for today's workout",style:  TextStyle(fontSize: 15,fontWeight: FontWeight.w700,color: Color(0xffffffff)),)
+                        ],
+                      ) ;
+                  } else if (state is UserLoading) {
+                    return   Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Welcome Back...!",style:  TextStyle(fontSize: 17,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
+                        Text("user,Ready for today's workout",style:  TextStyle(fontSize: 15,fontWeight: FontWeight.w700,color: Color(0xffffffff)),)
+                      ],
+                    ) ;
+                  } else {
+                    return Text('Error loading user',style: TextStyle(color: Colors.white),);
+                  }
+                }),),
+
+
+          backgroundColor:AppColors.secondaryolor,
         ),
-        title:
-        uid.isEmpty
-            ? Container(
-          child: CircularProgressIndicator(),
-        )
-            :
-        BlocProvider(
-        create: (context) =>
-    UserBloc(userRepository: UserRepository())
-    ..add(FetchCompleteUserData(uid)),
-        child:
-        BlocBuilder<UserBloc, UserState>(
-            builder: (context, state) {
-              if (state is UserLoaded) {
-                var data= state.userData;
-                userName=state.userData['name'] ??
-                    'User';
-
-                final name = state.userData['name'] ??
-                    'User';
-                var BMI= state.userData["BMI"];
-
-                return
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Welcome Back...!",style:  TextStyle(fontSize: 17,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
-                      Text("${name},Ready for today's workout",style:  TextStyle(fontSize: 15,fontWeight: FontWeight.w700,color: Color(0xffffffff)),)
-                    ],
-                  ) ;
-              } else if (state is UserLoading) {
-                return Text('Loading...');
-              } else {
-                return Text('Error loading user',style: TextStyle(color: Colors.white),);
-              }
-            }),),
-
-
-      backgroundColor:AppColors.secondaryolor,
-      ),
-      endDrawer: Padding(
-        padding: const EdgeInsets.all(0.0),
-        child:
-        Padding(
-          padding: const EdgeInsets.all(8.0),
+        endDrawer: Padding(
+          padding: const EdgeInsets.all(0.0),
           child: Drawer(
-            backgroundColor: AppColors.secondaryolor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero, // Removes default border radius
+              ),
+              backgroundColor: AppColors.secondaryolor,
               width: width * 0.8,
 
 
@@ -442,7 +627,8 @@ void TimerDialogue({required double width}){
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(onPressed: (){
-                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>Homepage()));
+                            Navigator.pop(context);
+                            //Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>Homepage()));
                           }, icon:Icon(Icons.arrow_back,color: Colors.white,)),
                           IconButton(onPressed: (){}, icon: Icon(Icons.settings,color: Colors.white,))
                         ],
@@ -454,47 +640,47 @@ void TimerDialogue({required double width}){
                       children: [
                         uid.isEmpty
                             ? Container(
-                                child: CircularProgressIndicator(),
-                              )
+                          child: CircularProgressIndicator(),
+                        )
                             :
                         Container(
-          color: Colors.white,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      height: 110,
-                                      child: DrawerHeader(
-                                        decoration: BoxDecoration(
-                                          color: AppColors.secondaryolor,
+                          color: Colors.white,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: 110,
+                                child: DrawerHeader(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondaryolor,
 
-                                        ),
-                                        child:
-                                        Column(
+                                  ),
+                                  child:
+                                  Column(
+                                    children: [
+
+                                      BlocProvider(
+                                        create: (context) =>
+                                        UserBloc(userRepository: UserRepository())
+                                          ..add(FetchCompleteUserData(uid)),
+                                        child: Column(
                                           children: [
+                                            BlocBuilder<UserBloc, UserState>(
+                                                builder: (context, state) {
+                                                  if (state is UserLoaded) {
+                                                    var data= state.userData;
+                                                    userName=state.userData['name'] ??
+                                                        'User';
 
-                                            BlocProvider(
-                                            create: (context) =>
-                                            UserBloc(userRepository: UserRepository())
-                                              ..add(FetchCompleteUserData(uid)),
-                                            child: Column(
-                                              children: [
-                                                BlocBuilder<UserBloc, UserState>(
-                                                    builder: (context, state) {
-                                                      if (state is UserLoaded) {
-                                                        var data= state.userData;
-                                                        userName=state.userData['name'] ??
-                                                            'User';
+                                                    final name = state.userData['name'] ??
+                                                        'User';
+                                                    var BMI= state.userData["BMI"];
 
-                                                        final name = state.userData['name'] ??
-                                                            'User';
-                                                        var BMI= state.userData["BMI"];
-
-                                                        return
-                                                          Row(
-                                                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                                              children: [
+                                                    return
+                                                      Row(
+                                                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                                          children: [
 
                                                             Stack(
                                                               children: [
@@ -502,8 +688,8 @@ void TimerDialogue({required double width}){
                                                                   width: 70,
                                                                   height: 70,
                                                                   decoration: BoxDecoration(
-                                                                    shape: BoxShape.circle,
-                                                                   border: Border.all(width: 2,color: Colors.white)
+                                                                      shape: BoxShape.circle,
+                                                                      border: Border.all(width: 2,color: Colors.white)
                                                                   ),
                                                                   child: Padding(
                                                                     padding: EdgeInsets.all(
@@ -513,8 +699,8 @@ void TimerDialogue({required double width}){
                                                                       45, // Inner avatar size
 
                                                                       backgroundImage: imgPath != null
-                                                                    ? FileImage(File(imgPath!))
-                                                                : AssetImage("assets/images/fullbody2.jpeg"),
+                                                                          ? FileImage(File(imgPath!))
+                                                                          : AssetImage("assets/images/fullbody2.jpeg"),
 
                                                                       backgroundColor: AppColors.secondaryolor,
                                                                     ),
@@ -555,13 +741,13 @@ void TimerDialogue({required double width}){
                                                                 Row(
                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                                   children: [
-                                                                    Text(" BMI: ${data["BMI"]??"N/A"}",style:
-                                                                    TextStyle(fontSize: 17,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
+                                                                    Text("BMI: ${data["BMI"]??"N/A"}",style:
+                                                                    TextStyle(fontSize: 16,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
                                                                     Padding(
-                                                                      padding: const EdgeInsets.only(left: 8.0),
+                                                                      padding: const EdgeInsets.only(left: 4.0,right:4.0 ),
                                                                       child: Text("|",style: TextStyle(fontSize: 19,fontWeight: FontWeight.w400,color: Color(0xffffffff)),),
                                                                     ),
-                                                                    Text(" Weight :${data["weight"]??"N/A"}",style: TextStyle(fontSize: 17,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
+                                                                    Text("Weight :${data["weight"]??"N/A"}",style: TextStyle(fontSize: 16,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
 
                                                                   ],
                                                                 )
@@ -572,616 +758,802 @@ void TimerDialogue({required double width}){
                                                               height: 30,
                                                             )
                                                           ]);
-                                                      } else if (state is UserLoading) {
-                                                        return Text('Loading...');
-                                                      } else {
-                                                        return Text('App Title');
-                                                      }
-                                                    })
-                                              ],
-                                            ),
-                                                                              ),
+                                                  } else if (state is UserLoading) {
+                                                    return   Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                                      children: [
+                                                        Container(
+                                                          width: 70,
+                                                          height: 70,
+                                                          decoration: BoxDecoration(
+                                                              shape: BoxShape.circle,
+                                                              border: Border.all(width: 2,color: Colors.white)
+                                                          ),
+                                                          child: Padding(
+                                                            padding: EdgeInsets.all(
+                                                                0.0), // Border thickness
+                                                            child: CircleAvatar(
+                                                              radius:
+                                                              45, // Inner avatar size
+
+                                                              backgroundImage: imgPath != null
+                                                                  ? FileImage(File(imgPath!))
+                                                                  : AssetImage("assets/images/fullbody2.jpeg"),
+
+                                                              backgroundColor: AppColors.secondaryolor,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        Column(
+                                                          children: [
+                                                            Text("User",style: TextStyle(fontSize: 19,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
+                                                            Row(
+                                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                              children: [
+                                                                Text(" BMI: BMI",style:
+                                                                TextStyle(fontSize: 17,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
+                                                                Padding(
+                                                                  padding: const EdgeInsets.only(left: 8.0),
+                                                                  child: Text("|",style: TextStyle(fontSize: 19,fontWeight: FontWeight.w400,color: Color(0xffffffff)),),
+                                                                ),
+                                                                Text(" Weight :50",style: TextStyle(fontSize: 17,fontWeight: FontWeight.w700,color: Color(0xffffffff)),),
+
+                                                              ],
+                                                            )
+
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    );
+                                                  } else {
+                                                    return Text('App Title');
+                                                  }
+                                                })
                                           ],
                                         ),
                                       ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8.0,left: 15),
-                                      child: Text("Settings",style: DrawerTextStyle(mfontSize: 20.0),textAlign: TextAlign.start,),
-                                    ),
-                                    SizedBox(
-                                      height: 10,
-                                    ),
-
-                                    GestureDetector(
-                                      onTap: (){
-                                        Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeftWithFade,child: NewProfilePage()));
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(2.0),
-                                        child: ListTile(
-                                          title:Text("User Data",style: DrawerTextStyle(),),
-                                          leading: CircleAvatar(
-
-                                            backgroundColor: AppColors.secondaryolor,
-                                            child: Icon(Icons.person,color: Colors.white,),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: ListTile(
-                                        title:Text("Favourite Workout",style: DrawerTextStyle(),),
-                                        leading: CircleAvatar(
-
-                                          backgroundColor: AppColors.secondaryolor,
-                                          child: Icon(FontAwesomeIcons.heart,color: Colors.white,),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(6.0),
-                                      child: ListTile(
-                                        title:Text("Schedule Workout",style: DrawerTextStyle(),),
-                                        leading: CircleAvatar(
-
-                                          backgroundColor: AppColors.secondaryolor,
-                                          child: Icon(Icons.calendar_month,color: Colors.white,),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(6.0),
-                                      child: GestureDetector(
-                                        onTap: (){
-                                          TimerDialogue(width: width);
-                                        },
-                                        child: ListTile(
-                                          title:Text("Time Managment",style: DrawerTextStyle(),),
-                                          leading: CircleAvatar(
-
-                                            backgroundColor: AppColors.secondaryolor,
-                                            child: Icon(Icons.watch_later_sharp,color: Colors.white,),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: ListTile(
-                                        title:Text("Restart Workout",style: DrawerTextStyle(),),
-                                        leading: CircleAvatar(
-
-                                          backgroundColor: AppColors.secondaryolor,
-                                          child: Icon(Icons.fitness_center,color: Colors.white,),
-                                        ),
-                                      ),
-                                    ),
-
-
-                                    Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: GestureDetector(
-                                        onTap: (){
-                                        //  Navigator.pop(context);
-                                          _showVolumeDialog();
-                                        },
-                                        child: ListTile(
-                                          title:Text("Volume",style: DrawerTextStyle(),),
-                                          leading: CircleAvatar(
-
-                                            backgroundColor: AppColors.secondaryolor,
-                                            child: Icon(Icons.volume_down_rounded,color: Colors.white,),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(6.0),
-                                      child: GestureDetector(
-                                        onTap: (){
-                                          Navigator.push(context, MaterialPageRoute(builder: (_)=>WorkoutHistory()));
-                                        },
-                                        child: ListTile(
-                                          title:Text(" Workout History",style: DrawerTextStyle(),),
-                                          leading: CircleAvatar(
-
-                                            backgroundColor: AppColors.secondaryolor,
-                                            child: Icon(Icons.history,color: Colors.white,),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: ListTile(
-                                        title:Text("Log Out",style: DrawerTextStyle(),),
-                                        leading: CircleAvatar(
-
-                                          backgroundColor: AppColors.secondaryolor,
-                                          child: InkWell(
-                                              onTap: ()async{
-                                                var prefs=await SharedPreferences.getInstance();
-                                                prefs.setBool('isLoggedIn', false);
-                                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>NewLoginPage()));
-                                              },
-                                              child: Icon(Icons.exit_to_app,color: Colors.white,)),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 20,
-                                    ),
-                                    Divider(
-                                      height: 2,
-                                      indent: 20,
-                                      endIndent: 20,
-                                      color: Colors.black45,
-
-                                    ),
-                                    SizedBox(
-                                      height: 15,
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: GestureDetector(
-                                        onTap: (){
-                                          //  Navigator.pop(context);
-                                          _showVolumeDialog();
-                                        },
-                                        child: ListTile(
-                                          title:Text("More Apps",style: DrawerTextStyle(),),
-                                          leading: Icon(Icons.window,color: AppColors.secondaryolor,size: 30,),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(6.0),
-                                      child: GestureDetector(
-                                        onTap: (){
-                                          Navigator.push(context, MaterialPageRoute(builder: (_)=>WorkoutHistory()));
-                                        },
-                                        child: ListTile(
-                                          title:Text(" Rate Us"),
-                                          leading: Icon(Icons.thumb_up,color: AppColors.secondaryolor,size: 30,),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: ListTile(
-                                        title:Text("Log Out",style: DrawerTextStyle(),),
-                                        leading: CircleAvatar(
-
-                                          backgroundColor: AppColors.secondaryolor,
-                                          child: InkWell(
-                                              onTap: ()async{
-                                                var prefs=await SharedPreferences.getInstance();
-                                                prefs.setBool('isLoggedIn', false);
-                                                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>NewLoginPage()));
-                                              },
-                                              child: Icon(Icons.exit_to_app,color: Colors.white,)),
-                                        ),
-                                      ),
-                                    ),
-
-
-
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              )
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0,left: 15.0),
+                                child: Text("Settings",style: DrawerTextStyle(mfontSize: 20.0),textAlign: TextAlign.start,),
+                              ),
+                              SizedBox(
+                                height: 10,
+                              ),
+
+                              GestureDetector(
+                                onTap: (){
+                                  Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeftWithFade,child: NewProfilePage()));
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(0.0),
+                                  child: ListTile(
+                                    title:Text("User Data",style: DrawerTextStyle(),),
+                                    leading: CircleAvatar(
+
+                                      backgroundColor: AppColors.secondaryolor,
+                                      child: Icon(Icons.person,color: Colors.white,),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: ListTile(
+                                  title:Text("Favourite Workout",style: DrawerTextStyle(),),
+                                  leading: CircleAvatar(
+
+                                    backgroundColor: AppColors.secondaryolor,
+                                    child: Icon(FontAwesomeIcons.heart,color: Colors.white,),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: ListTile(
+                                  title:Text("Schedule Workout",style: DrawerTextStyle(),),
+                                  leading: CircleAvatar(
+
+                                    backgroundColor: AppColors.secondaryolor,
+                                    child: Icon(Icons.calendar_month,color: Colors.white,),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: GestureDetector(
+                                  onTap: (){
+                                    TimerDialogue(width: width);
+                                  },
+                                  child: ListTile(
+                                    title:Text("Time Managment",style: DrawerTextStyle(),),
+                                    leading: CircleAvatar(
+
+                                      backgroundColor: AppColors.secondaryolor,
+                                      child: Icon(Icons.watch_later_sharp,color: Colors.white,),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: InkWell(
+                                  onTap: (){
+                                    showRestartDialog(context);
+
+                                  },
+                                  child: ListTile(
+                                    title:Text("Restart Workout",style: DrawerTextStyle(),),
+                                    leading: CircleAvatar(
+
+                                      backgroundColor: AppColors.secondaryolor,
+                                      child: Icon(Icons.fitness_center,color: Colors.white,),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: GestureDetector(
+                                  onTap: (){
+                                    //  Navigator.pop(context);
+                                    _showVolumeDialog();
+                                  },
+                                  child: ListTile(
+                                    title:Text("Volume",style: DrawerTextStyle(),),
+                                    leading: CircleAvatar(
+
+                                      backgroundColor: AppColors.secondaryolor,
+                                      child: Icon(Icons.volume_down_rounded,color: Colors.white,),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: GestureDetector(
+                                  onTap: (){
+                                    Navigator.push(context, MaterialPageRoute(builder: (_)=>WorkoutHistory()));
+                                  },
+                                  child: ListTile(
+                                    title:Text(" Workout History",style: DrawerTextStyle(),),
+                                    leading: CircleAvatar(
+
+                                      backgroundColor: AppColors.secondaryolor,
+                                      child: Icon(Icons.history,color: Colors.white,),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: ListTile(
+                                  title:Text("Log Out",style: DrawerTextStyle(),),
+                                  leading: CircleAvatar(
+
+                                    backgroundColor: AppColors.secondaryolor,
+                                    child: InkWell(
+                                        onTap: ()async{
+                                          var prefs=await SharedPreferences.getInstance();
+                                          prefs.setBool('isLoggedIn', false);
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>NewLoginPage()));
+                                        },
+                                        child: Icon(Icons.exit_to_app,color: Colors.white,)),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                height: 10,
+                              ),
+                              Divider(
+                                height: 2,
+                                indent: 20,
+                                endIndent: 20,
+                                color: Colors.black45,
+
+                              ),
+                              SizedBox(
+                                height: 15,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: GestureDetector(
+                                  onTap: (){
+                                    //  Navigator.pop(context);
+                                    _showVolumeDialog();
+                                  },
+                                  child: ListTile(
+                                    title:Text("More Apps",style: DrawerTextStyle(),),
+                                    leading: Icon(Icons.window,color: AppColors.secondaryolor,size: 30,),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(0.0),
+                                child: GestureDetector(
+                                  onTap: (){
+                                    // Navigator.push(context, MaterialPageRoute(builder: (_)=>WorkoutHistory()));
+                                  },
+                                  child: ListTile(
+                                    title:Text(" Rate Us",style: DrawerTextStyle()),
+                                    leading: Icon(Icons.thumb_up,color: AppColors.secondaryolor,size: 30,),
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: ()async{
+                                  var prefs=await SharedPreferences.getInstance();
+                                  prefs.setBool('isLoggedIn', false);
+                                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>NewLoginPage()));
+                                },
+                                child: ListTile(
+                                  title:Text("Log Out",style: DrawerTextStyle(),),
+                                  leading: CircleAvatar(
+
+                                    backgroundColor: AppColors.secondaryolor,
+                                    child: InkWell(
+                                        onTap: ()async{
+                                          var prefs=await SharedPreferences.getInstance();
+                                          prefs.setBool('isLoggedIn', false);
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_)=>NewLoginPage()));
+                                        },
+                                        child: Icon(Icons.exit_to_app,color: Colors.white,)),
+                                  ),
+                                ),
+                              ),
+
+
+
+                            ],
+                          ),
+                        )
                       ],
                     ),
                   ),
                 ],
               )),
         ),
-      ),
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: FadeInLeft(
-          child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Text(
-                    "Popular Exercises",
-                    style: HomeTextStyle(
-                        mfontSize: isLandscape?width*0.04:width*0.054
-                    )
-                    //TextStyle(fontSize: width * 0.06, color: Colors.white),
+        backgroundColor: Colors.white,
+        body: SingleChildScrollView(
+          child: FadeInLeft(
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(
+                        "Popular Exercises",
+                        style: HomeTextStyle(
+                            mfontSize: isLandscape?width*0.04:width*0.054
+                        )
+                      //TextStyle(fontSize: width * 0.06, color: Colors.white),
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: height*0.02,
-                ),
-                Container(
-                  height: height*0.21,
-                  child: CarouselSlider(
-                    items: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              PageTransition(
-                                  child: Challengesscreen( isChallenge: false,workout: workoutlist[0], days: 0, challengename: '',),
-                                  type: PageTransitionType.leftToRight));
-                        },
-                        child: PopularExercise(
-                          motivation: 'Abs are made in the gym but revealed in the kitchen—commit to both!.',
-                  exerciseNumber: workoutlist[0].exercises,
+                  SizedBox(
+                    height: height*0.02,
+                  ),
+                  Container(
+                  height: height*0.225,
+                    child: CarouselSlider(
+                      items: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                PageTransition(
+                                    child: Challengesscreen( isChallenge: false,workout: workoutlist[0], days: 0, challengename: '',),
+                                    type: PageTransitionType.leftToRight));
+                          },
+                          child: PopularExercise(
+                            motivation: 'Abs are made in the gym but revealed in the kitchen—commit to both!.',
+                            exerciseNumber: workoutlist[0].exercises,
                             height: isLandscape?height*0.5:height * 0.32,
                             workoutDays: "5",
                             workoutName: "Six Pack",
                             img: "assets/images/sixpack2.jpeg",
                             width: width * 0.3, workoutDuration: '5',),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              PageTransition(
-                                  child: Challengesscreen( isChallenge: false,workout: workoutlist[1], days: 0, challengename: '',),
-                                  type: PageTransitionType.leftToRight));
-                        },
-                        child: PopularExercise(
-                            exerciseNumber: workoutlist[1].exercises,
-                          motivation: "Strong arms build a strong foundation—lift, push, and grow!.",
-                            workoutDuration: '5',
-                            img: "assets/images/arms2.jpeg",
-                            height:isLandscape?height*0.5:height * 0.32,
-                            workoutDays: "5",
-                            workoutName: "Arms",
-                            width: width * 0.3),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              PageTransition(
-                                  child: Challengesscreen( isChallenge: false,workout: workoutlist[2],days: 0, challengename: '',),
-                                  type: PageTransitionType.leftToRight));
-                        },
-                        child: PopularExercise(
-                            exerciseNumber: workoutlist[2].exercises,
-                          motivation:"A powerful chest is built one rep at a time—push through!." ,
-                            workoutDuration: '5',
-                            img: "assets/images/chest2.jpeg",
-                            height: isLandscape?height*0.5:height * 0.32,
-                            workoutDays: "5",
-                            workoutName: "Chest",
-                            width: width * 0.3),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              PageTransition(
-                                  child: Challengesscreen( workout:  workoutlist[3], isChallenge: false, days: 0, challengename: '',),
-                                  type: PageTransitionType.leftToRight));
-                        },
-                        child: PopularExercise(
-                            exerciseNumber: workoutlist[3].exercises,
-                          motivation:"Strong legs, strong body—don’t skip leg day!" ,
-                            workoutDuration: '5',
-                            img: "assets/images/legs2.jpeg",
-                            height: isLandscape?height*0.5:height * 0.32,
-                            workoutDays: "5",
-                            workoutName: "Legs",
-                            width: width * 0.3),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              PageTransition(
-                                  child:Challengesscreen(workout:  workoutlist[4], isChallenge: false,days: 0, challengename: '',),
-                                  type: PageTransitionType.leftToRight));
-                        },
-                        child: PopularExercise(
-                            exerciseNumber: workoutlist[4].exercises,
-                          motivation: "One workout, countless gains—go full body, go all in!",
-                            workoutDuration: '5',
-                            img: "assets/images/fullbody2.jpeg",
-                            height: isLandscape?height*0.5:height * 0.32,
-                            workoutDays: "7",
-                            workoutName: "Full Body ",
-                            width: width * 0.3),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              PageTransition(
-                                  child: Challengesscreen( isChallenge: false,workout: workoutlist[5], days: 0, challengename: '',),
-                                  type: PageTransitionType.leftToRight));
-                        },
-                        child: PopularExercise(
-                            exerciseNumber: workoutlist[5].exercises,
-                          motivation: "Run your race—fast, strong, and unstoppable!",
-                            workoutDuration: '5',
-                            img: "assets/images/shoulder.jpg",
-                            height:isLandscape?height*0.7:height * 0.3,
-                            workoutDays: "8",
-                            workoutName: "Cardio Blast",
-                            width: width * 0.3),
-                      ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                PageTransition(
+                                    child: Challengesscreen( isChallenge: false,workout: workoutlist[1], days: 0, challengename: '',),
+                                    type: PageTransitionType.leftToRight));
+                          },
+                          child: PopularExercise(
+                              exerciseNumber: workoutlist[1].exercises,
+                              motivation: "Strong arms build a strong foundation—lift, push, and grow!.",
+                              workoutDuration: '5',
+                              img: "assets/images/arms2.jpeg",
+                              height:isLandscape?height*0.5:height * 0.32,
+                              workoutDays: "5",
+                              workoutName: "Arms",
+                              width: width * 0.3),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                PageTransition(
+                                    child: Challengesscreen( isChallenge: false,workout: workoutlist[2],days: 0, challengename: '',),
+                                    type: PageTransitionType.leftToRight));
+                          },
+                          child: PopularExercise(
+                              exerciseNumber: workoutlist[2].exercises,
+                              motivation:"A powerful chest is built one rep at a time—push through!." ,
+                              workoutDuration: '5',
+                              img: "assets/images/chest2.jpeg",
+                              height: isLandscape?height*0.5:height * 0.32,
+                              workoutDays: "5",
+                              workoutName: "Chest",
+                              width: width * 0.3),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                PageTransition(
+                                    child: Challengesscreen( workout:  workoutlist[3], isChallenge: false, days: 0, challengename: '',),
+                                    type: PageTransitionType.leftToRight));
+                          },
+                          child: PopularExercise(
+                              exerciseNumber: workoutlist[3].exercises,
+                              motivation:"Strong legs, strong body—don’t skip leg day!" ,
+                              workoutDuration: '5',
+                              img: "assets/images/legs2.jpeg",
+                              height: isLandscape?height*0.5:height * 0.32,
+                              workoutDays: "5",
+                              workoutName: "Legs",
+                              width: width * 0.3),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                PageTransition(
+                                    child:Challengesscreen(workout:  workoutlist[4], isChallenge: false,days: 0, challengename: '',),
+                                    type: PageTransitionType.leftToRight));
+                          },
+                          child: PopularExercise(
+                              exerciseNumber: workoutlist[4].exercises,
+                              motivation: "One workout, countless gains—go full body, go all in!",
+                              workoutDuration: '5',
+                              img: "assets/images/fullbody2.jpeg",
+                              height: isLandscape?height*0.5:height * 0.32,
+                              workoutDays: "7",
+                              workoutName: "Full Body ",
+                              width: width * 0.3),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                PageTransition(
+                                    child: Challengesscreen( isChallenge: false,workout: workoutlist[5], days: 0, challengename: '',),
+                                    type: PageTransitionType.leftToRight));
+                          },
+                          child: PopularExercise(
+                              exerciseNumber: workoutlist[5].exercises,
+                              motivation: "Run your race—fast, strong, and unstoppable!",
+                              workoutDuration: '5',
+                              img: "assets/images/shoulder.jpg",
+                              height:isLandscape?height*0.7:height * 0.3,
+                              workoutDays: "8",
+                              workoutName: "Cardio Blast",
+                              width: width * 0.3),
+                        ),
 
-                    ], options:
-                  CarouselOptions(
-                    height: height*0.2,
-                    autoPlay: true,
-                    enlargeCenterPage: true,
-                    aspectRatio: 16 / 9,
-                    enableInfiniteScroll: false,
-                    viewportFraction: 0.7,
-                    onPageChanged:(index, reason) {
-                      setState(() {
-                        _currentIndex = index; // Update current index
-                      });
-                    },
-                    enlargeStrategy: CenterPageEnlargeStrategy.scale,
-                  ),
-
-
-                  ),
-                ),
-
-                SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(6, (index) {
-                    // Generate dots based on the number of items
-                    return GestureDetector(
-                      onTap: () {
+                      ], options:
+                    CarouselOptions(
+                      height: height*0.22,
+                      autoPlay: true,
+                      enlargeCenterPage: true,
+                      aspectRatio: 16 / 9,
+                      enableInfiniteScroll: false,
+                      viewportFraction: 0.7,
+                      onPageChanged:(index, reason) {
                         setState(() {
-                          _currentIndex = index;
+                          _currentIndex = index; // Update current index
                         });
                       },
-                      child: Container(
-                        width: 12.0,
-                        height: 12.0,
-                        margin: EdgeInsets.only(top: 0.0, left: 4.0),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentIndex == index
-                              ? AppColors.secondaryolor // Active dot color
-                              : Colors.grey, // Inactive dot color
-                        ),
-                      ),
-                    );
-                  }),
-                ),
+                      enlargeStrategy: CenterPageEnlargeStrategy.scale,
+                    ),
 
-                SizedBox(
-                  height: height*0.02,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0,bottom: 4),
-                  child: Text("28 Days Workout Challenge",style: HomeTextStyle(
-                    mfontSize: isLandscape?width*0.04:width*0.054
-                  ),),
-                ),
-                SizedBox(height: 6,),
-                Divider(
-                  height: 2,
-                  color: Colors.grey,
-                  indent: 7,
-                  endIndent: 8,
-                ),
-                SizedBox(height: 6,),
 
-                Card(
-                  elevation: 4,
-                  child: Column(
-                    children: [
+                    ),
+                  ),
 
-                      Container(
-                        decoration: BoxDecoration(
-
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(10)),
-                            color: AppColors.secondaryolor,
-
-                        ),
-                        //margin: EdgeInsets.symmetric(horizontal: 20),
-
-                         // Background for the tab bar
-                        child: TabBar(
-                          controller: _tabController,
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          indicator: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.red, width: 4,), // Red line under the selected tab
-                            ),
-                            color: Colors.white, // Background color for the selected tab
-                            //borderRadius: BorderRadius.only(topLeft: Radius.circular(8)), // Rounded corners for the indicator
-                          ),
-                          labelColor: AppColors.secondaryolor, // Text color of selected tab
-                          unselectedLabelColor: Colors.white, // Text color of unselected tabs
-                          labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: isLandscape?width*0.03:width*0.04),
-                          unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
-                          tabs: [
-                            Tab(text: "Full Body"),
-                            Tab(text: "Upper Body"),
-                            Tab(text: "Lower Body"),
-                          ],
-                        ),
-                      ),
-
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(6, (index) {
+                      // Generate dots based on the number of items
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _currentIndex = index;
+                          });
+                        },
                         child: Container(
+                          width: 12.0,
+                          height: 12.0,
+                          margin: EdgeInsets.only(top: 0.0, left: 4.0),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentIndex == index
+                                ? AppColors.secondaryolor // Active dot color
+                                : Colors.grey, // Inactive dot color
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+
+                  SizedBox(
+                    height: height*0.02,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0,bottom: 4),
+                    child: Text("28 Days Workout Challenge",style: HomeTextStyle(
+                        mfontSize: isLandscape?width*0.04:width*0.054
+                    ),),
+                  ),
+                  SizedBox(height: 6,),
+                  Divider(
+                    height: 2,
+                    color: Colors.grey,
+                    indent: 7,
+                    endIndent: 8,
+                  ),
+                  SizedBox(height: 6,),
+
+                  Card(
+                    elevation: 4,
+                    child: Column(
+                      children: [
+
+                        Container(
                           decoration: BoxDecoration(
 
-                            borderRadius: BorderRadius.only(bottomRight: Radius.circular(10),bottomLeft: Radius.circular(10)),
+                            borderRadius: BorderRadius.only(topLeft: Radius.circular(10),topRight: Radius.circular(10)),
+                            color: AppColors.secondaryolor,
 
                           ),
+                          //margin: EdgeInsets.symmetric(horizontal: 20),
 
-                          height: height*0.23,
-                          child: TabBarView(
+                          // Background for the tab bar
+                          child: TabBar(
                             controller: _tabController,
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            indicator: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color:AppColors.secondaryolor, width: 4,), // Red line under the selected tab
+                              ),
+                              color: Colors.white, // Background color for the selected tab
+                              //borderRadius: BorderRadius.only(topLeft: Radius.circular(8)), // Rounded corners for the indicator
+                            ),
+                            labelColor: AppColors.secondaryolor, // Text color of selected tab
+                            unselectedLabelColor: Colors.white, // Text color of unselected tabs
+                            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: isLandscape?width*0.03:width*0.04),
+                            unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
+                            tabs: [
+                              Tab(text: "Full Body"),
+                              Tab(text: "Upper Body"),
+                              Tab(text: "Lower Body"),
+                            ],
+                          ),
+                        ),
+
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 0.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+
+                              borderRadius: BorderRadius.only(bottomRight: Radius.circular(10),bottomLeft: Radius.circular(10)),
+
+                            ),
+
+                            height: height*0.24,
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                // Content for each tab
+                                GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                          context,
+                                          PageTransition(
+                                              child:
+
+                                              daysFull==0?
+                                              Challengesscreen(
+                                                workout: workoutlist[4],
+                                                isChallenge: true, days: daysFull, challengename: 'Full Body',): WorkoutChallengePage(workout: workoutlist[4],
+                                                challenge: challengelist[5],daysCompleted: daysFull,workoutName: "Full Body",),
+                                              type: PageTransitionType.leftToRight));
+                                    },
+                                    child: ChallengesContainer(
+                                      Days: daysFull,
+                                      height: height * 0.4,
+                                      width: width ,
+                                      img: "assets/images/fullbody2.jpeg",
+                                      workout: "Full Body",
+                                      motivation: "Success is earned, not given. Make each workout count and build the body you deserve!",)),
+                                GestureDetector(
+                                    onTap: (){
+                                      Navigator.push(
+                                          context,
+                                          PageTransition(
+                                              child:
+                                              daysUpper==0?     Challengesscreen(
+                                                workout: workoutlist[6],
+                                                isChallenge: true, days: daysUpper, challengename: 'Upper Body',):WorkoutChallengePage(workout: workoutlist[6],
+                                                challenge: challengelist[7],daysCompleted: daysFull,workoutName: "Upper Body",),
+                                              type: PageTransitionType.leftToRight));
+                                    },
+                                    child: ChallengesContainer( Days: daysUpper, height: height*0.4, width: width*0.85, img: "assets/images/cardioblast.jpeg", workout: "Upper Body",motivation: "Every rep gets you closer to your goal. Keep going, you’re stronger than you think!" ,
+                                    )),
+                                GestureDetector(
+                                    onTap: (){
+                                      Navigator.push(
+                                          context,
+                                          PageTransition(
+                                              child:
+                                              daysLower==0?  Challengesscreen(
+                                                workout: workoutlist[7],
+                                                isChallenge: true, days: daysLower, challengename: 'Lower Body',):WorkoutChallengePage( workout: workoutlist[7],
+                                                challenge: challengelist[8],daysCompleted: daysLower,workoutName: "Lower Body",),
+                                              type: PageTransitionType.leftToRight));
+                                    },
+                                    child: ChallengesContainer(
+                                      Days: daysLower,
+                                      height: height*0.3, width: width*0.85, img: "", workout: "Lower Body",motivation: "Push yourself today, and see the results tomorrow. Strength starts with your commitment.",))
+
+
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+
+                  SizedBox(
+                    height: height * 0.01,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(
+                      "Body Focus workouts",
+                      style: HomeTextStyle(
+                          mfontSize: isLandscape?width*0.04:width*0.054
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 6,),
+                  Divider(
+                    height: 2,
+                    color: Colors.grey,
+                    indent: 7,
+                    endIndent: 8,
+                  ),
+                  SizedBox(height: 6,),
+
+                  Container(
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+                    //height: (height * 0.4 * 4), // Adjust height based on item count
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: SingleChildScrollView(
+                        child: Column(
                             children: [
-                              // Content for each tab
-                              GestureDetector(
+                              Container(
+                                height: height*0.221,
+                                margin: EdgeInsets.all(5),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      PageTransition(
+                                        child: Challengesscreen( isChallenge: false,workout: workoutlist[0],days: 0, challengename: '',),
+                                        type: PageTransitionType.leftToRight,
+                                      ),
+                                    );
+                                  },
+                                  child: PopularExercise(
+                                    exerciseNumber: workoutlist[0].exercises,
+                                    motivation:
+                                    'Abs are made in the gym but revealed in the kitchen—commit to both!',
+                                    height: height * 0.3,
+                                    workoutDays: "5",
+                                    workoutName: "Six Pack",
+                                    img: "assets/images/sixpack2.jpeg",
+                                    width: width * 0.3,
+                                    workoutDuration: '5',
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                height: height*0.221,
+                                margin: EdgeInsets.all(5),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      PageTransition(
+                                        child: Challengesscreen( isChallenge: false,workout: workoutlist[1], days: 0, challengename: '',),
+                                        type: PageTransitionType.leftToRight,
+                                      ),
+                                    );
+                                  },
+                                  child:
+                                  PopularExercise(
+                                    exerciseNumber: workoutlist[1].exercises,
+                                    motivation:
+                                    "Strong arms build a strong foundation—lift, push, and grow!",
+                                    workoutDuration: '5',
+                                    img: "assets/images/arms2.jpeg",
+                                    height: height * 0.3,
+                                    workoutDays: "5",
+                                    workoutName: "Arms",
+                                    width: width * 0.3,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                height: height*0.221,
+                                margin: EdgeInsets.all(5),
+                                child: GestureDetector(
                                   onTap: () {
                                     Navigator.push(
                                         context,
                                         PageTransition(
-                                            child:
-
-                                            daysFull==0?
-                                            Challengesscreen(
-                                                workout: workoutlist[4],
-                                                isChallenge: true, days: daysFull, challengename: 'Full Body',): WorkoutChallengePage(workout: workoutlist[4],
-                                              challenge: challengelist[5],daysCompleted: daysFull,workoutName: "Full Body",),
+                                            child: Challengesscreen( isChallenge: false,workout: workoutlist[2],days: 0, challengename: '',),
                                             type: PageTransitionType.leftToRight));
                                   },
-                                  child: ChallengesContainer(
-                                    Days: daysFull,
-                                    height: height * 0.4,
-                                    width: width ,
-                                    img: "assets/images/fullbody2.jpeg",
-                                    workout: "Full Body",
-                                    motivation: "Success is earned, not given. Make each workout count and build the body you deserve!",)),
-                              GestureDetector(
-                                  onTap: (){
+                                  child: PopularExercise(
+                                      exerciseNumber: workoutlist[2].exercises,
+                                      motivation:"A powerful chest is built one rep at a time—push through!." ,
+                                      workoutDuration: '5',
+                                      img: "assets/images/chest2.jpeg",
+                                      height: isLandscape?height*0.5:height * 0.32,
+                                      workoutDays: "5",
+                                      workoutName: "Chest",
+                                      width: width * 0.3),
+                                ),
+                              ),
+                              Container(
+                                height: height*0.22,
+                                margin: EdgeInsets.all(5),
+                                child:  GestureDetector(
+                                  onTap: () {
                                     Navigator.push(
                                         context,
                                         PageTransition(
-                                            child:
-                                            daysUpper==0?     Challengesscreen(
-                                                workout: workoutlist[6],
-                                              isChallenge: true, days: daysUpper, challengename: 'Upper Body',):WorkoutChallengePage(workout: workoutlist[6],
-                                              challenge: challengelist[7],daysCompleted: daysFull,workoutName: "Upper Body",),
+                                            child: Challengesscreen( workout:  workoutlist[3], isChallenge: false, days: 0, challengename: '',),
                                             type: PageTransitionType.leftToRight));
                                   },
-                                  child: ChallengesContainer( Days: daysUpper, height: height*0.4, width: width*0.85, img: "assets/images/cardioblast.jpeg", workout: "Upper Body",motivation: "Every rep gets you closer to your goal. Keep going, you’re stronger than you think!" ,
-                                  )),
-                              GestureDetector(
-                                  onTap: (){
+                                  child: PopularExercise(
+                                      exerciseNumber: workoutlist[3].exercises,
+                                      motivation:"Strong legs, strong body—don’t skip leg day!" ,
+                                      workoutDuration: '5',
+                                      img: "assets/images/legs2.jpeg",
+                                      height: isLandscape?height*0.5:height * 0.32,
+                                      workoutDays: "5",
+                                      workoutName: "Legs",
+                                      width: width * 0.3),
+                                ),
+                              ),
+                              Container(
+                                margin: EdgeInsets.all(5),
+                                height: height*0.221,
+                                child:  GestureDetector(
+                                  onTap: () {
                                     Navigator.push(
                                         context,
                                         PageTransition(
-                                            child:
-                                            daysLower==0?  Challengesscreen(
-                                                workout: workoutlist[7],
-                                              isChallenge: true, days: daysLower, challengename: 'Lower Body',):WorkoutChallengePage( workout: workoutlist[7],
-                                              challenge: challengelist[8],daysCompleted: daysLower,workoutName: "Lower Body",),
+                                            child:Challengesscreen(workout:  workoutlist[4], isChallenge: false,days: 0, challengename: '',),
                                             type: PageTransitionType.leftToRight));
                                   },
-                                  child: ChallengesContainer(
-                                    Days: daysLower,
-                                    height: height*0.3, width: width*0.85, img: "", workout: "Lower Body",motivation: "Push yourself today, and see the results tomorrow. Strength starts with your commitment.",))
+                                  child: PopularExercise(
+                                      exerciseNumber: workoutlist[4].exercises,
+                                      motivation: "One workout, countless gains—go full body, go all in!",
+                                      workoutDuration: '5',
+                                      img: "assets/images/fullbody2.jpeg",
+                                      height: isLandscape?height*0.5:height * 0.32,
+                                      workoutDays: "7",
+                                      workoutName: "Full Body ",
+                                      width: width * 0.3),
+                                ),
+                              ),
 
+                              Container(
+                                height: height*0.221,
+                                margin: EdgeInsets.all(5),
+                                child:  GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                        context,
+                                        PageTransition(
+                                            child: Challengesscreen( isChallenge: false,workout: workoutlist[5], days: 0, challengename: '',),
+                                            type: PageTransitionType.leftToRight));
+                                  },
+                                  child: PopularExercise(
+                                      exerciseNumber: workoutlist[5].exercises,
+                                      motivation: "Run your race—fast, strong, and unstoppable!",
+                                      workoutDuration: '5',
+                                      img: "assets/images/shoulder.jpg",
+                                      height:isLandscape?height*0.7:height * 0.3,
+                                      workoutDays: "8",
+                                      workoutName: "Cardio Blast",
+                                      width: width * 0.3),
+                                ),
+                              )
+                              ,
+                              // SizedBox(height: 1,),
 
-                            ],
+                              /* List.generate(workoutlist.length, (index) {
+                      return Container(
+                        margin: EdgeInsets.all(5),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              PageTransition(
+                                child: Challengesscreen(
+                                  isChallenge: false,
+                                  workout: workoutlist[index],
+                                  days: 0,
+                                  challengename: '',
+                                ),
+                                type: PageTransitionType.leftToRight,
+                              ),
+                            );
+                          },
+                          child: PopularExercise(
+                            exerciseNumber: workoutlist[index].exercises,
+                            motivation: "",
+                            workoutDuration: '5',
+                            img: "",
+                            height: isLandscape ? height * 0.5 : height * 0.32,
+                            workoutDays: "",
+                            workoutName: "",
+                            width: width * 0.3,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-
-                SizedBox(
-                  height: height * 0.01,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Text(
-                    "Body Focus workouts",
-                    style: HomeTextStyle(
-                        mfontSize: isLandscape?width*0.04:width*0.054
-                    ),
-                  ),
-                ),
-                SizedBox(height: 6,),
-                Divider(
-                  height: 2,
-                  color: Colors.grey,
-                  indent: 7,
-                  endIndent: 8,
-                ),
-                SizedBox(height: 6,),
-
-
-              Container(
-               // color: Colors.black,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8)
-                ),
-                height: (height * 0.4 * 4), // Adjust height based on item count
-                child: ListView(
-                  primary: true,
-                  //physics: const BouncingScrollPhysics(),
-                  scrollDirection: Axis.vertical,
-                  itemExtent: 150,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          PageTransition(
-                            child: Challengesscreen( isChallenge: false,workout: workoutlist[0],days: 0, challengename: '',),
-                            type: PageTransitionType.leftToRight,
-                          ),
-                        );
-                      },
-                      child: PopularExercise(
-                        exerciseNumber: workoutlist[0].exercises,
-                        motivation:
-                        'Abs are made in the gym but revealed in the kitchen—commit to both!',
-                        height: height * 0.3,
-                        workoutDays: "5",
-                        workoutName: "Six Pack",
-                        img: "assets/images/sixpack2.jpeg",
-                        width: width * 0.3,
-                        workoutDuration: '5',
+                      );
+                    }),*/
+                            ]),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          PageTransition(
-                            child: Challengesscreen( isChallenge: false,workout: workoutlist[1], days: 0, challengename: '',),
-                            type: PageTransitionType.leftToRight,
-                          ),
-                        );
-                      },
-                      child:
-                      PopularExercise(
-                        exerciseNumber: workoutlist[1].exercises,
-                        motivation:
-                        "Strong arms build a strong foundation—lift, push, and grow!",
-                        workoutDuration: '5',
-                        img: "assets/images/arms2.jpeg",
-                        height: height * 0.3,
-                        workoutDays: "5",
-                        workoutName: "Arms",
-                        width: width * 0.3,
-                      ),
-                    ),
-                  ],
-                ),
+                  )
+
+
+
+
+
+            ],
               ),
-
-
-
-              ],
             ),
           ),
         ),
       ),
     );
   }
+
+
+
 
   void getimg(bool camera) async {
     if (camera) {
@@ -1261,8 +1633,8 @@ class ChallengesContainer extends StatelessWidget {
   final double width;
   final String img;
   final String workout;
- final String motivation;
- final int Days;
+  final String motivation;
+  final int Days;
 
   @override
   Widget build(BuildContext context) {
@@ -1273,7 +1645,7 @@ class ChallengesContainer extends StatelessWidget {
       //margin: EdgeInsets.only(right: width * 0.01),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(width * 0.03),
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(width * 0.03),bottomRight: Radius.circular(width * 0.03),),
       ),
       child: Padding(
         padding: EdgeInsets.only(right: width * 0.05),
@@ -1281,10 +1653,12 @@ class ChallengesContainer extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-           
+
             Expanded(
               flex: 1,
               child: Container(
+                //padding: EdgeInsets.all(15),
+                margin:EdgeInsets.only(bottom: 8,left: 2,) ,
                 decoration: BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage(img),
@@ -1295,35 +1669,36 @@ class ChallengesContainer extends StatelessWidget {
                 //height: height * 0.4, // Ensure the image container takes up the height
               ),
             ),
+            SizedBox(
+              width: width*0.07,
+            ),
             Expanded(
               flex: 2,
               child: Column(
+
                 crossAxisAlignment: CrossAxisAlignment.center,
                 //mainAxisAlignment: MainAxisAlignment.spaceAround,
                 //crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+Row(
+  crossAxisAlignment: CrossAxisAlignment.center,
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    Text("28 DAYS ",  textAlign: TextAlign.center,style: TextStyle(
 
-                  Padding(
-                    padding: EdgeInsets.only(right: width * 0.05),
-                    child: Text.rich(TextSpan(children: [
-                      TextSpan(
-                          text: "28 DAYS ",
-                          
-                          style: TextStyle(
-                            fontSize: IsLandscape?width*0.03:width*0.07,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xff4a4545),
-                          )),
-                      TextSpan(
-                          text: "${workout}   ",
-                          style:
-                          TextStyle(
-                            color: AppColors.secondaryolor,
-                            fontSize: IsLandscape?width*0.03:width*0.06,
-                            fontWeight: FontWeight.w700,
-                          ),     )
-                    ])),
-                  ),
+      fontSize: IsLandscape?width*0.03:width*0.07,
+      fontWeight: FontWeight.w700,
+      color: Color(0xff4a4545),
+    )),
+    Text('${workout}',style:
+    TextStyle(
+      color: AppColors.secondaryolor,
+      fontSize: IsLandscape?width*0.03:width*0.06,
+      fontWeight: FontWeight.w700,
+    ),  )
+  ],
+),
+
                   Text(
                     "CHALLENGE...",
                     textAlign: TextAlign.center,
@@ -1333,42 +1708,42 @@ class ChallengesContainer extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Text(motivation,style:
-                  TextStyle(
-                    fontSize:  IsLandscape?width*0.03:width*0.04,
-                    color: Color(0xff4a4545),
-                    fontWeight: FontWeight.w700
-                  ),textAlign: TextAlign.start,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(motivation,style:
+                    TextStyle(
+                        fontSize:  IsLandscape?width*0.03:width*0.04,
+                        color: Color(0xff4a4545),
+                        fontWeight: FontWeight.w700
+                    ),textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: 4,
-                ),
-
-
-                Container(
-        padding:EdgeInsets.symmetric(horizontal: 10),
-                  margin:EdgeInsets.symmetric(horizontal: 10) ,
-
-                  alignment: Alignment.center,
-                  width: 200,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey,
-                        blurRadius: 2.0, // Elevation effect
-                        offset: Offset(0, 3),
-
-                      ),
-                    ],
-                    color: AppColors.secondaryolor,
-                    borderRadius: BorderRadius.circular(8),
+                  SizedBox(
+                    height: 4,
                   ),
-                  child: Text( Days==0?"ACCEPT CHALLENGE ":"Continue",style: TextStyle(fontSize:IsLandscape?width*0.03:width*0.04,color: Colors.white,fontWeight: FontWeight.w700),textAlign: TextAlign.center,),
-                )
+
+
+                  Container(
+                    padding:EdgeInsets.symmetric(horizontal: 10),
+                    margin:EdgeInsets.only(left: 10,right: 10,bottom: 10) ,
+
+                    alignment: Alignment.center,
+                    width: 200,
+                    height:IsLandscape? 20:40,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey,
+                          blurRadius: 2.0, // Elevation effect
+                          offset: Offset(0, 3),
+
+                        ),
+                      ],
+                      color: AppColors.secondaryolor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text( Days==0?"ACCEPT CHALLENGE ":"Continue",style: TextStyle(fontSize:IsLandscape?width*0.03:width*0.04,color: Colors.white,fontWeight: FontWeight.w700),textAlign: TextAlign.center,),
+                  )
                 ],
               ),
             ),
@@ -1383,11 +1758,11 @@ class ChallengesContainer extends StatelessWidget {
 class PopularExercise extends StatefulWidget {
   PopularExercise(
       {required this.height,
-      required this.workoutDays,
-      required this.workoutName,
-      required this.width,
-      required this.img,
-      required this.workoutDuration,
+        required this.workoutDays,
+        required this.workoutName,
+        required this.width,
+        required this.img,
+        required this.workoutDuration,
         required this.motivation,
         required this.exerciseNumber,
       });
@@ -1414,133 +1789,136 @@ class _PopularExerciseState extends State<PopularExercise> {
 
       Container(
         padding: EdgeInsets.symmetric(horizontal: 5,vertical: 5),
-      decoration: BoxDecoration(
-        border:Border.all(
-          width: 1,
-          color: Colors.transparent
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey,
-            blurRadius: 6.0, // Elevation effect
-            offset: Offset(0, 3),
-
+        decoration: BoxDecoration(
+          border:Border.all(
+              width: 1,
+              color: Colors.transparent
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey,
+              blurRadius: 6.0, // Elevation effect
+              offset: Offset(0, 3),
 
-        gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-          Color(0xffE5EEF5),
-          Color(0xffffffff),
-        ]),
+            ),
+          ],
 
-        color: Colors.white,
-        //border: Border.all(width: 2,),
-       /* image: DecorationImage(
+          gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xffE5EEF5),
+                Color(0xffffffff),
+
+              ]),
+
+          color: Colors.white,
+          //border: Border.all(width: 2,),
+          /* image: DecorationImage(
             image: AssetImage(widget.img), fit: BoxFit.cover, opacity: 0.6),*/
-        shape: BoxShape.rectangle,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Card(
-              elevation: 15,
-              //shadowColor: Colors.grey,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 10,vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                      color: Colors.transparent
+          shape: BoxShape.rectangle,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 1,
+              child: Card(
+                elevation: 15,
+                //shadowColor: Colors.grey,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10,vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                        color: Colors.transparent
+                    ),
+
+                    image: DecorationImage(
+                      image: AssetImage(widget.img,),
+
+
+                      fit: BoxFit.cover, // Adjust this as needed
+                    ),
                   ),
-
-                  image: DecorationImage(
-                    image: AssetImage(widget.img,),
-
-
-                    fit: BoxFit.cover, // Adjust this as needed
-                  ),
+                  //child: Image.asset(img,fit: BoxFit.contain,),
+                  height: widget.height,
                 ),
-                //child: Image.asset(img,fit: BoxFit.contain,),
-                height: widget.height,
+
               ),
-
             ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Column(
-              children: [
-                Flexible(
-                  child: Text(
-                    widget.workoutName,
-                    style: TextStyle(fontSize: IsLandscape?widget.width*0.03:widget.height*0.06, color: AppColors.secondaryolor,fontWeight: FontWeight.w700),
-                    overflow: TextOverflow.ellipsis, // Prevents text from overflowing
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  Flexible(
+                    child: Text(
+                      widget.workoutName,
+                      style: TextStyle(fontSize: IsLandscape?widget.width*0.07:widget.width*0.16, color: AppColors.secondaryolor,fontWeight: FontWeight.w700),
+                      overflow: TextOverflow.ellipsis, // Prevents text from overflowing
+                    ),
+                  ),   Flexible(
+                    child: Text(
+                      widget.motivation,
+                      style: TextStyle(fontSize: IsLandscape?widget.width*0.05:widget.width*0.12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xff4a4545)),
+                      textAlign: TextAlign.center,
+                      maxLines: 2, // Limit the number of lines to prevent overflow
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),   SizedBox(
+                    height: 10,
                   ),
-                ),   Flexible(
-                  child: Text(
-                    widget.motivation,
-                    style: TextStyle(fontSize: IsLandscape?widget.width*0.03:widget.height*0.04, color: Color(0xff4a4545)),
-                    textAlign: TextAlign.center,
-                    maxLines: 2, // Limit the number of lines to prevent overflow
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),   SizedBox(
-                  height: 10,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Row(children: [
-                      Icon(FontAwesomeIcons.clock,color: AppColors.secondaryolor,size: 17,),
-                      SizedBox(width: 8,),
-                      Text("${widget.workoutDuration} minutes",style: TextStyle(fontSize: IsLandscape?widget.width*0.03:widget.height*0.04,fontWeight: FontWeight.w700,color: Color(0xff4a4545)),)
-                    ],),
-
-                    Row(
-                      children: [
-                        Icon(Icons.fitness_center,color: AppColors.secondaryolor,size: 17,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Row(children: [
+                        Icon(FontAwesomeIcons.clock,color: AppColors.secondaryolor,size: 17,),
                         SizedBox(width: 8,),
-                        Text("${widget.exerciseNumber} Exercise",style: TextStyle(fontSize: IsLandscape?widget.width*0.03:widget.height*0.04,fontWeight: FontWeight.w700,color: Color(0xff4a4545)),)
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 25,
-                ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    alignment: Alignment.center,
-                    width: 150,
-                    height: 30,
-                    //height: widget.height*0.11,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey,
-                          blurRadius: 2.0, // Elevation effect
-                          offset: Offset(0, 3),
-
-                        ),
-                      ],
-                      color: AppColors.secondaryolor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text("START",style: TextStyle(fontSize:18,color: Colors.white,fontWeight: FontWeight.w700),textAlign: TextAlign.center,),
+                        Text("${widget.workoutDuration} minutes",style: TextStyle(fontSize: IsLandscape?widget.width*0.05:widget.width*0.12,fontWeight: FontWeight.w700,color: Color(0xff4a4545)),)
+                      ],),
+                      SizedBox(width: 3,),
+                      Row(
+                        children: [
+                          Icon(Icons.fitness_center,color: AppColors.secondaryolor,size: 17,),
+                          SizedBox(width: 2,),
+                          Text("${widget.exerciseNumber} Exercise",style: TextStyle(fontSize: IsLandscape?widget.width*0.03:widget.width*0.12,fontWeight: FontWeight.w700,color: Color(0xff4a4545)),)
+                        ],
+                      ),
+                    ],
                   ),
-                )
-              ],
+                  SizedBox(
+                    height: 25,
+                  ),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      alignment: Alignment.center,
+                      width: 150,
+                      height: 30,
+                      //height: widget.height*0.11,
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey,
+                            blurRadius: 2.0, // Elevation effect
+                            offset: Offset(0, 3),
+
+                          ),
+                        ],
+                        color: AppColors.secondaryolor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text("START",style: TextStyle(fontSize:18,color: Colors.white,fontWeight: FontWeight.w700),textAlign: TextAlign.center,),
+                    ),
+                  )
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
   }
 }
 
